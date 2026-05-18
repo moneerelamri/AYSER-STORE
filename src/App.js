@@ -156,7 +156,13 @@ const GS = () => (
     ::-webkit-scrollbar-thumb{background:#1e2d44;border-radius:3px;}
     input,select,button,textarea{font-family:inherit;}
     .sx{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-    @media print{.np{display:none!important;}body{background:white;color:black;}}
+    @media print{
+      .np{display:none!important;}
+      .sidebar-el{display:none!important;}
+      .topbar-el{display:none!important;}
+      .main-content{margin:0!important;padding:0!important;}
+      body{background:white!important;color:black!important;}
+    }
   `}</style>
 );
 const inp = {width:"100%",padding:"10px 13px",borderRadius:9,border:"1px solid #1e2d44",background:"#070b14",color:"#e2e8f0",fontSize:13,outline:"none"};
@@ -207,6 +213,8 @@ export default function App() {
   const [clock,setClock] = useState(new Date());
   const [lastBk,setLastBk] = useState(null);
   const [mobile,setMobile] = useState(window.innerWidth<768);
+  const [storeInfo,setStoreInfo] = useState({phone:"",phone2:"",address:"",addressEn:"",maps:""});
+  const [logo,setLogo] = useState("");
 
   const t = T[lang]; const isRtl = lang==="ar";
   const isAdmin = user?.role==="admin";
@@ -228,7 +236,16 @@ export default function App() {
     setLog(p=>[{id:genId(),userId:user.id,userName:user.name,userNameEn:user.nameEn,userRole:user.role,action,section,detail,...dt},...p].slice(0,500));
   };
 
-  if(!user) return <Login t={t} lang={lang} setLang={setLang} users={users} onLogin={u=>{setUser(u);setTab("dashboard");}} isRtl={isRtl}/>;
+  if(!user) {
+    // Check if URL has tracking param
+    const urlParams = new URLSearchParams(window.location.search);
+    const trackId = urlParams.get("track");
+    if(trackId) {
+      const dev = devices.find(d=>String(d.id)===trackId);
+      return <TrackingPage dev={dev} trackId={trackId} lang={lang} setLang={setLang} isRtl={isRtl}/>;
+    }
+    return <Login t={t} lang={lang} setLang={setLang} users={users} onLogin={u=>{setUser(u);setTab("dashboard");}} isRtl={isRtl} logo={logo}/>;
+  }
 
   const NAV=[
     {id:"dashboard",icon:"📊",label:t.dashboard,ok:true},
@@ -239,17 +256,20 @@ export default function App() {
     {id:"reports",icon:"📈",label:t.reports,ok:can("reports_view")},
     {id:"activity",icon:"🕵️",label:t.activityLog,ok:isAdmin},
     {id:"users",icon:"👥",label:t.users,ok:isAdmin},
+    {id:"store",icon:"🏪",label:lang==="ar"?"إعدادات المتجر":"Store Settings",ok:isAdmin},
     {id:"backup",icon:"🗄️",label:t.backup,ok:isAdmin},
   ].filter(n=>n.ok);
 
   const go=(id)=>{setTab(id);setSideOpen(false);};
 
   const SidebarEl = () => (
-    <aside style={{position:"fixed",[isRtl?"right":"left"]:0,top:0,bottom:0,width:215,background:"#0a0f1e",borderInlineEnd:"1px solid #1e2d44",display:"flex",flexDirection:"column",zIndex:200,transform:mobile?(sideOpen?"translateX(0)":(isRtl?"translateX(110%)":"translateX(-110%)")):"translateX(0)",transition:"transform .25s ease",boxShadow:mobile&&sideOpen?"0 0 40px #000a":"none"}}>
+    <aside className="sidebar-el" style={{position:"fixed",[isRtl?"right":"left"]:0,top:0,bottom:0,width:215,background:"#0a0f1e",borderInlineEnd:"1px solid #1e2d44",display:"flex",flexDirection:"column",zIndex:200,transform:mobile?(sideOpen?"translateX(0)":(isRtl?"translateX(110%)":"translateX(-110%)")):"translateX(0)",transition:"transform .25s ease",boxShadow:mobile&&sideOpen?"0 0 40px #000a":"none"}}>
       {/* Logo & Clock */}
       <div style={{padding:"12px 10px 10px",borderBottom:"1px solid #1e2d44"}}>
         <Row s={{gap:9,marginBottom:9}}>
-          <div style={{width:34,height:34,borderRadius:9,background:"linear-gradient(135deg,#2563eb,#1d4ed8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>📱</div>
+          <div style={{width:34,height:34,borderRadius:9,background:"linear-gradient(135deg,#2563eb,#1d4ed8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0,overflow:"hidden"}}>
+            {logo?<img src={logo} alt="logo" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:"📱"}
+          </div>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:14,fontWeight:800,color:"#fff"}}>{t.appTitle}</div>
             <div style={{fontSize:9,color:"#374151"}}>{t.appSubtitle}</div>
@@ -301,7 +321,7 @@ export default function App() {
       <SidebarEl/>
       {/* Mobile topbar */}
       {mobile&&(
-        <div style={{position:"fixed",top:0,left:0,right:0,height:50,background:"#0a0f1e",borderBottom:"1px solid #1e2d44",display:"flex",alignItems:"center",padding:"0 14px",zIndex:150,gap:12}}>
+        <div className="topbar-el" style={{position:"fixed",top:0,left:0,right:0,height:50,background:"#0a0f1e",borderBottom:"1px solid #1e2d44",display:"flex",alignItems:"center",padding:"0 14px",zIndex:150,gap:12}}>
           <button onClick={()=>setSideOpen(true)} style={{background:"none",border:"none",color:"#9ca3af",fontSize:22,cursor:"pointer"}}>☰</button>
           <span style={{fontSize:14,fontWeight:800,color:"#fff"}}>{t.appTitle}</span>
           <div style={{marginInlineStart:"auto",display:"flex",alignItems:"center",gap:8}}>
@@ -312,16 +332,17 @@ export default function App() {
       {/* Toast */}
       {toast&&<div style={{position:"fixed",top:mobile?56:16,left:"50%",transform:"translateX(-50%)",background:toast.type==="success"?"#065f46":"#7f1d1d",color:"#fff",padding:"10px 24px",borderRadius:10,zIndex:9999,fontSize:13,fontWeight:500,boxShadow:"0 8px 32px #0006",whiteSpace:"nowrap"}}>{toast.msg}</div>}
       {/* Main */}
-      <main style={{[ml]:mobile?0:215,paddingTop:mobile?52:0,minHeight:"100vh"}}>
+      <main className="main-content" style={{[ml]:mobile?0:215,paddingTop:mobile?52:0,minHeight:"100vh"}}>
         <div style={{padding:mobile?"12px 10px":"22px",maxWidth:1300,margin:"0 auto"}}>
           {tab==="dashboard"&&<Dashboard t={t} parts={parts} tools={tools} invoices={invoices} devices={devices} isAdmin={isAdmin} lang={lang} mobile={mobile}/>}
-          {tab==="devices"&&<DevicesSection t={t} devices={devices} setDevices={setDevices} users={users} user={user} showToast={showToast} logA={logA} lang={lang} isAdmin={isAdmin} can={can} mobile={mobile}/>}
+          {tab==="devices"&&<DevicesSection t={t} devices={devices} setDevices={setDevices} users={users} user={user} showToast={showToast} logA={logA} lang={lang} isAdmin={isAdmin} can={can} mobile={mobile} storeInfo={storeInfo} logo={logo}/>}
           {tab==="hardware"&&<HardwareSection t={t} parts={parts} setParts={setParts} isAdmin={isAdmin} showToast={showToast} user={user} lang={lang} logA={logA} can={can} mobile={mobile}/>}
           {tab==="software"&&<SoftwareSection t={t} tools={tools} setTools={setTools} isAdmin={isAdmin} showToast={showToast} user={user} lang={lang} logA={logA} can={can} mobile={mobile}/>}
-          {tab==="invoices"&&<InvoicesSection t={t} invoices={invoices} setInvoices={setInvoices} parts={parts} setParts={setParts} user={user} showToast={showToast} lang={lang} isAdmin={isAdmin} logA={logA} can={can} mobile={mobile}/>}
+          {tab==="invoices"&&<InvoicesSection t={t} invoices={invoices} setInvoices={setInvoices} parts={parts} setParts={setParts} user={user} showToast={showToast} lang={lang} isAdmin={isAdmin} logA={logA} can={can} mobile={mobile} storeInfo={storeInfo}/>}
           {tab==="reports"&&<ReportsSection t={t} invoices={invoices} parts={parts} isAdmin={isAdmin} lang={lang} mobile={mobile} can={can}/>}
           {tab==="activity"&&isAdmin&&<ActivitySection t={t} log={log} setLog={setLog} users={users} lang={lang} mobile={mobile}/>}
           {tab==="users"&&isAdmin&&<UsersSection t={t} users={users} setUsers={setUsers} showToast={showToast} lang={lang} mobile={mobile} isRtl={isRtl}/>}
+          {tab==="store"&&isAdmin&&<StoreSettings lang={lang} storeInfo={storeInfo} setStoreInfo={setStoreInfo} showToast={showToast} mobile={mobile} logo={logo} setLogo={setLogo}/>}
           {tab==="backup"&&isAdmin&&<BackupSection t={t} users={users} parts={parts} tools={tools} invoices={invoices} devices={devices} setUsers={setUsers} setParts={setParts} setTools={setTools} setInvoices={setInvoices} setDevices={setDevices} showToast={showToast} lang={lang} lastBk={lastBk} user={user} mobile={mobile}/>}
         </div>
       </main>
@@ -332,9 +353,15 @@ export default function App() {
 // ════════════════════════════════════════════════════
 //  LOGIN
 // ════════════════════════════════════════════════════
-function Login({t,lang,setLang,users,onLogin,isRtl}) {
+function Login({t,lang,setLang,users,onLogin,isRtl,logo}) {
   const [un,setUn]=useState(""); const [pw,setPw]=useState(""); const [err,setErr]=useState("");
-  const go=()=>{const u=users.find(x=>x.username===un&&x.password===pw);if(u){onLogin(u);setErr("");}else setErr(t.invalidLogin);};
+  const go=()=>{
+    const u=users.find(x=>x.username===un&&x.password===pw);
+    if(u){
+      if(u.active===false){setErr(lang==="ar"?"هذا الحساب موقوف. تواصل مع المدير":"This account is disabled. Contact admin.");return;}
+      onLogin(u);setErr("");
+    }else setErr(t.invalidLogin);
+  };
   return (
     <div dir={isRtl?"rtl":"ltr"} style={{minHeight:"100vh",background:"linear-gradient(135deg,#070b14,#0d1321)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:isRtl?"'Tajawal',sans-serif":"'Outfit',sans-serif",padding:16}}>
       <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet"/>
@@ -342,7 +369,13 @@ function Login({t,lang,setLang,users,onLogin,isRtl}) {
       <div style={{position:"fixed",top:"15%",left:"5%",width:350,height:350,background:"radial-gradient(circle,#1d4ed820,transparent 70%)",borderRadius:"50%",pointerEvents:"none"}}/>
       <div style={{width:"100%",maxWidth:420,background:"#0d1321cc",backdropFilter:"blur(20px)",borderRadius:20,border:"1px solid #1e2d44",padding:"32px 28px",boxShadow:"0 32px 80px #000a"}}>
         <div style={{textAlign:"center",marginBottom:28}}>
-          <div style={{width:66,height:66,borderRadius:18,background:"linear-gradient(135deg,#2563eb,#1d4ed8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,margin:"0 auto 14px"}}>📱</div>
+          {/* Logo */}
+          <div style={{width:90,height:90,borderRadius:22,background:"linear-gradient(135deg,#2563eb,#1d4ed8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:40,margin:"0 auto 16px",overflow:"hidden",boxShadow:"0 8px 32px #2563eb44"}}>
+            {logo
+              ? <img src={logo} alt="logo" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+              : "📱"
+            }
+          </div>
           <h1 style={{fontSize:24,fontWeight:800,color:"#fff",margin:0}}>{t.appTitle}</h1>
           <p style={{color:"#6b7280",fontSize:12,marginTop:5}}>{t.appSubtitle}</p>
         </div>
@@ -355,7 +388,6 @@ function Login({t,lang,setLang,users,onLogin,isRtl}) {
         <div style={{marginBottom:18}}><FF label={t.password}><Inp type="password" value={pw} onChange={e=>setPw(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&go()}/></FF></div>
         {err&&<div style={{background:"#7f1d1d33",border:"1px solid #7f1d1d44",borderRadius:9,padding:"9px 13px",color:"#f87171",fontSize:12,marginBottom:14,textAlign:"center"}}>{err}</div>}
         <Btn onClick={go} full s={{padding:"13px",fontSize:15}}>🚀 {t.loginBtn}</Btn>
-
       </div>
     </div>
   );
@@ -437,7 +469,7 @@ function Dashboard({t,parts,tools,invoices,devices,isAdmin,lang,mobile}) {
 // ════════════════════════════════════════════════════
 //  DEVICES SECTION
 // ════════════════════════════════════════════════════
-function DevicesSection({t,devices,setDevices,users,user,showToast,logA,lang,isAdmin,can,mobile}) {
+function DevicesSection({t,devices,setDevices,users,user,showToast,logA,lang,isAdmin,can,mobile,storeInfo={},logo=""}) {
   const [showF,setShowF]=useState(false); const [editId,setEditId]=useState(null);
   const [search,setSearch]=useState(""); const [fStatus,setFStatus]=useState("all");
   const [printDev,setPrintDev]=useState(null);
@@ -479,7 +511,7 @@ function DevicesSection({t,devices,setDevices,users,user,showToast,logA,lang,isA
   };
 
   if(!can("devices_view"))return <NoAccess t={t}/>;
-  if(printDev) return <PrintDevice dev={printDev} t={t} lang={lang} onBack={()=>setPrintDev(null)}/>;
+  if(printDev) return <PrintDevice dev={printDev} t={t} lang={lang} onBack={()=>setPrintDev(null)} storeInfo={storeInfo} logo={logo}/>;
 
   return (
     <div>
@@ -591,22 +623,205 @@ function DevicesSection({t,devices,setDevices,users,user,showToast,logA,lang,isA
 }
 
 // ════════════════════════════════════════════════════
-//  PRINT DEVICE RECEIPT
+//  STORE SETTINGS
 // ════════════════════════════════════════════════════
-function PrintDevice({dev,t,lang,onBack}) {
+function StoreSettings({lang,storeInfo,setStoreInfo,showToast,mobile,logo,setLogo}) {
+  const [form,setForm]=useState({...storeInfo});
+  const f=(k,v)=>setForm(p=>({...p,[k]:v}));
+  const save=()=>{setStoreInfo({...form});showToast(lang==="ar"?"تم حفظ معلومات المتجر":"Store info saved");};
+  const isRtl=lang==="ar";
+
+  const handleLogo=(e)=>{
+    const file=e.target.files[0];
+    if(!file)return;
+    if(!file.type.startsWith("image/")){showToast(lang==="ar"?"الرجاء اختيار صورة":"Please select an image","error");return;}
+    if(file.size>2*1024*1024){showToast(lang==="ar"?"الصورة كبيرة جداً (الحد 2MB)":"Image too large (max 2MB)","error");return;}
+    const reader=new FileReader();
+    reader.onload=e=>setLogo(e.target.result);
+    reader.readAsDataURL(file);
+  };
+
   return (
-    <div>
+    <div dir={isRtl?"rtl":"ltr"}>
+      <PH title={`🏪 ${lang==="ar"?"إعدادات المتجر":"Store Settings"}`}/>
+
+      {/* Logo Upload */}
+      <Card s={{marginBottom:14}}>
+        <h3 style={{fontSize:14,fontWeight:700,color:"#e2e8f0",marginBottom:16}}>🖼 {lang==="ar"?"شعار المتجر":"Store Logo"}</h3>
+        <div style={{display:"flex",alignItems:"center",gap:20,flexWrap:"wrap"}}>
+          {/* Preview */}
+          <div style={{width:100,height:100,borderRadius:18,background:"linear-gradient(135deg,#2563eb,#1d4ed8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:42,overflow:"hidden",flexShrink:0,boxShadow:"0 8px 24px #2563eb33"}}>
+            {logo?<img src={logo} alt="logo" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:"📱"}
+          </div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:12,color:"#6b7280",marginBottom:10,lineHeight:1.8}}>
+              {lang==="ar"
+                ?"يظهر الشعار في صفحة تسجيل الدخول والقائمة الجانبية ووصل الاستلام\nالصيغ المدعومة: PNG, JPG, WEBP (الحد الأقصى 2MB)"
+                :"Logo appears in login page, sidebar and device receipts\nSupported: PNG, JPG, WEBP (max 2MB)"}
+            </div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              <label style={{padding:"9px 16px",borderRadius:9,border:"none",background:"linear-gradient(90deg,#2563eb,#3b82f6)",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                📁 {lang==="ar"?"اختر صورة":"Choose Image"}
+                <input type="file" accept="image/*" onChange={handleLogo} style={{display:"none"}}/>
+              </label>
+              {logo&&<button onClick={()=>setLogo("")} style={{padding:"9px 16px",borderRadius:9,border:"1px solid #7f1d1d44",background:"#7f1d1d22",color:"#f87171",fontSize:13,cursor:"pointer"}}>
+                🗑 {lang==="ar"?"حذف الشعار":"Remove Logo"}
+              </button>}
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Contact Info */}
+      <Card>
+        <h3 style={{fontSize:14,fontWeight:700,color:"#e2e8f0",marginBottom:16}}>
+          📞 {lang==="ar"?"معلومات التواصل":"Contact Information"}
+        </h3>
+        <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"1fr 1fr",gap:12,marginBottom:16}}>
+          <FF label={lang==="ar"?"رقم الهاتف الأول":"Phone Number 1"}>
+            <Inp value={form.phone} onChange={e=>f("phone",e.target.value)} placeholder="0911234567"/>
+          </FF>
+          <FF label={lang==="ar"?"رقم الهاتف الثاني (اختياري)":"Phone Number 2 (optional)"}>
+            <Inp value={form.phone2} onChange={e=>f("phone2",e.target.value)} placeholder="0921234567"/>
+          </FF>
+          <FF label={lang==="ar"?"العنوان (عربي)":"Address (Arabic)"}>
+            <Inp value={form.address} onChange={e=>f("address",e.target.value)} placeholder="طرابلس - شارع ..."/>
+          </FF>
+          <FF label={lang==="ar"?"العنوان (إنجليزي)":"Address (English)"}>
+            <Inp value={form.addressEn} onChange={e=>f("addressEn",e.target.value)} placeholder="Tripoli - ..."/>
+          </FF>
+          <FF label={lang==="ar"?"رابط الموقع على الخريطة":"Google Maps Link"}>
+            <Inp value={form.maps} onChange={e=>f("maps",e.target.value)} placeholder="https://maps.google.com/..."/>
+          </FF>
+        </div>
+        {(form.phone||form.address)&&(
+          <div style={{background:"#070b14",borderRadius:12,padding:14,marginBottom:16,border:"1px solid #1e2d44"}}>
+            <div style={{fontSize:11,color:"#6b7280",marginBottom:8}}>👁 {lang==="ar"?"معاينة في الوصولات":"Preview in receipts"}</div>
+            <div style={{fontSize:13,color:"#e2e8f0",lineHeight:2}}>
+              {form.phone&&<div>📞 {form.phone}{form.phone2&&` / ${form.phone2}`}</div>}
+              {form.address&&<div>📍 {lang==="ar"?form.address:form.addressEn||form.address}</div>}
+            </div>
+          </div>
+        )}
+        <Btn onClick={save} col="#065f46">💾 {lang==="ar"?"حفظ المعلومات":"Save Info"}</Btn>
+      </Card>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════
+//  TRACKING PAGE (public - no login)
+// ════════════════════════════════════════════════════
+function TrackingPage({dev,trackId,lang,setLang,isRtl}) {
+  const SC2={waiting:"#f59e0b",in_progress:"#3b82f6",ready:"#10b981"};
+  const SI2={waiting:"⏳",in_progress:"🔧",ready:"✅"};
+  const SL={ar:{waiting:"في الانتظار",in_progress:"في الصيانة",ready:"جاهز للاستلام"},en:{waiting:"Waiting",in_progress:"In Progress",ready:"Ready for Pickup"}};
+  return (
+    <div dir={isRtl?"rtl":"ltr"} style={{minHeight:"100vh",background:"linear-gradient(135deg,#070b14,#0d1321)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:isRtl?"'Tajawal',sans-serif":"'Outfit',sans-serif",padding:16}}>
+      <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet"/>
+      <div style={{width:"100%",maxWidth:440,background:"#0d1321",border:"1px solid #1e2d44",borderRadius:20,padding:28,boxShadow:"0 32px 80px #000a"}}>
+        {/* Header */}
+        <div style={{textAlign:"center",marginBottom:24,borderBottom:"1px solid #1e2d44",paddingBottom:20}}>
+          <div style={{fontSize:36,marginBottom:8}}>📱</div>
+          <h1 style={{fontSize:22,fontWeight:800,color:"#fff",margin:0}}>متجر ayser</h1>
+          <p style={{color:"#6b7280",fontSize:12,marginTop:4}}>{lang==="ar"?"تتبع حالة جهازك":"Track Your Device"}</p>
+          <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:12}}>
+            {["ar","en"].map(l=><button key={l} onClick={()=>setLang(l)} style={{padding:"5px 14px",borderRadius:8,border:"1px solid",borderColor:lang===l?"#2563eb":"#1e2d44",background:lang===l?"#1e3a5f":"transparent",color:lang===l?"#60a5fa":"#6b7280",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{l==="ar"?"🇱🇾 العربية":"🇺🇸 English"}</button>)}
+          </div>
+        </div>
+
+        {!dev ? (
+          <div style={{textAlign:"center",padding:20}}>
+            <div style={{fontSize:48,marginBottom:12}}>🔍</div>
+            <div style={{color:"#f87171",fontSize:15,fontWeight:600}}>{lang==="ar"?"لم يتم العثور على الجهاز":"Device Not Found"}</div>
+            <div style={{color:"#6b7280",fontSize:12,marginTop:8}}>{lang==="ar"?`رقم الجهاز: #${trackId}`:`Device ID: #${trackId}`}</div>
+          </div>
+        ) : (
+          <div>
+            {/* Status Banner */}
+            <div style={{background:`${SC2[dev.status]}22`,border:`2px solid ${SC2[dev.status]}`,borderRadius:14,padding:"18px 20px",textAlign:"center",marginBottom:20}}>
+              <div style={{fontSize:40,marginBottom:8}}>{SI2[dev.status]}</div>
+              <div style={{fontSize:20,fontWeight:800,color:SC2[dev.status]}}>{SL[lang][dev.status]}</div>
+              {dev.status==="ready"&&<div style={{fontSize:13,color:"#34d399",marginTop:6}}>{lang==="ar"?"✅ جهازك جاهز! يمكنك المجيء لاستلامه":"✅ Your device is ready! Come pick it up"}</div>}
+            </div>
+
+            {/* Device Info */}
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {[
+                {icon:"🔢",label:lang==="ar"?"رقم الجهاز":"Device ID",val:`#${dev.id}`},
+                {icon:"👤",label:lang==="ar"?"اسم العميل":"Customer",val:dev.customerName},
+                {icon:"📱",label:lang==="ar"?"نوع الجهاز":"Device",val:dev.deviceType},
+                {icon:"🔴",label:lang==="ar"?"نوع الخلل":"Fault",val:lang==="ar"?dev.faultType:dev.faultTypeEn||dev.faultType},
+                {icon:"🛠",label:lang==="ar"?"نوع الصيانة":"Service",val:lang==="ar"?dev.maintenanceType:dev.maintenanceTypeEn||dev.maintenanceType},
+                {icon:"📅",label:lang==="ar"?"تاريخ الاستلام":"Received",val:`${dev.receivedDate} ${dev.receivedTime}`},
+              ].map((row,i)=>(
+                <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",background:"#070b14",borderRadius:10}}>
+                  <span style={{fontSize:12,color:"#6b7280"}}>{row.icon} {row.label}</span>
+                  <span style={{fontSize:13,color:"#e2e8f0",fontWeight:600,maxWidth:"55%",textAlign:"end"}}>{row.val}</span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{textAlign:"center",marginTop:20,fontSize:11,color:"#374151"}}>
+              {lang==="ar"?"للاستفسار تواصل مع المتجر":"For inquiries contact the store"}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════
+//  PRINT DEVICE RECEIPT (with QR)
+// ════════════════════════════════════════════════════
+function PrintDevice({dev,t,lang,onBack,storeInfo={},logo=""}) {
+  const baseUrl = window.location.origin + window.location.pathname;
+  const trackUrl = `${baseUrl}?track=${dev.id}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(trackUrl)}`;
+  const isRtl = lang==="ar";
+  return (
+    <div dir={isRtl?"rtl":"ltr"}>
       <div className="np" style={{marginBottom:16,display:"flex",gap:10}}>
         <OBtn onClick={onBack}>← {t.cancel}</OBtn>
         <Btn onClick={()=>window.print()}>🖨️ {t.print}</Btn>
       </div>
-      <style>{`@media print{.np{display:none!important;}}`}</style>
       <div style={{maxWidth:550,margin:"0 auto",background:"#0d1321",border:"1px solid #1e2d44",borderRadius:16,padding:28}}>
+        {/* Header */}
         <div style={{textAlign:"center",marginBottom:20,borderBottom:"1px solid #1e2d44",paddingBottom:16}}>
-          <div style={{fontSize:32}}>📱</div>
+          <div style={{width:80,height:80,borderRadius:18,background:"linear-gradient(135deg,#2563eb,#1d4ed8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,margin:"0 auto 10px",overflow:"hidden"}}>
+            {logo?<img src={logo} alt="logo" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:"📱"}
+          </div>
           <h2 style={{fontSize:20,fontWeight:800,color:"#fff",margin:"8px 0 4px"}}>متجر ayser</h2>
           <p style={{color:"#6b7280",fontSize:11}}>وصل استلام جهاز / Device Receipt</p>
+          {/* Store contact info */}
+          {(storeInfo.phone||storeInfo.address)&&(
+            <div style={{marginTop:10,fontSize:11,color:"#9ca3af",lineHeight:1.9}}>
+              {storeInfo.phone&&<div>📞 {storeInfo.phone}{storeInfo.phone2&&` / ${storeInfo.phone2}`}</div>}
+              {storeInfo.address&&<div>📍 {lang==="ar"?storeInfo.address:storeInfo.addressEn||storeInfo.address}</div>}
+              {storeInfo.maps&&<div style={{color:"#60a5fa"}}>🗺 {storeInfo.maps}</div>}
+            </div>
+          )}
         </div>
+
+        {/* QR Code Section */}
+        <div style={{display:"flex",alignItems:"center",gap:20,background:"#070b14",borderRadius:14,padding:16,marginBottom:20,border:"1px solid #1e2d44"}}>
+          <div style={{textAlign:"center",flexShrink:0}}>
+            <img src={qrUrl} alt="QR" style={{width:120,height:120,borderRadius:10,background:"white",padding:4}}/>
+            <div style={{fontSize:10,color:"#6b7280",marginTop:6}}>{lang==="ar"?"امسح للتتبع":"Scan to Track"}</div>
+          </div>
+          <div>
+            <div style={{fontSize:13,fontWeight:700,color:"#60a5fa",marginBottom:6}}>
+              {lang==="ar"?"تتبع حالة جهازك":"Track Your Device"}
+            </div>
+            <div style={{fontSize:11,color:"#9ca3af",lineHeight:1.8}}>
+              {lang==="ar"?"امسح رمز QR لمتابعة حالة جهازك في أي وقت بدون تسجيل دخول":"Scan QR code to check your device status anytime without login"}
+            </div>
+            <div style={{fontSize:10,color:"#374151",marginTop:8,wordBreak:"break-all"}}>{trackUrl}</div>
+          </div>
+        </div>
+
+        {/* Device Details */}
         {[
           [t.deviceId, `#${dev.id}`],
           [t.customerName, dev.customerName],
@@ -621,7 +836,7 @@ function PrintDevice({dev,t,lang,onBack}) {
         ].map(([label,val],i)=>(
           <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #1e2d4444"}}>
             <span style={{fontSize:12,color:"#6b7280"}}>{label}</span>
-            <span style={{fontSize:13,color:"#e2e8f0",fontWeight:600}}>{val}</span>
+            <span style={{fontSize:13,color:"#e2e8f0",fontWeight:600,maxWidth:"60%",textAlign:"end"}}>{val}</span>
           </div>
         ))}
         <div style={{textAlign:"center",marginTop:20,fontSize:11,color:"#374151"}}>ayser Store — نظام إدارة الصيانة</div>
@@ -994,9 +1209,22 @@ function ActivitySection({t,log,setLog,users,lang,mobile}) {
 // ════════════════════════════════════════════════════
 function UsersSection({t,users,setUsers,showToast,lang,mobile,isRtl}) {
   const [showF,setShowF]=useState(false); const [editPermId,setEditPermId]=useState(null);
+  const [showPwModal,setShowPwModal]=useState(false);
+  const [pwForm,setPwForm]=useState({uid:"",current:"",newPw:"",confirm:""});
   const empty={username:"",password:"",confirmPassword:"",name:"",nameEn:"",role:"technician",permissions:{...DEFAULT_PERMS}};
   const [form,setForm]=useState(empty);
   const f=(k,v)=>setForm(p=>({...p,[k]:v}));
+
+  const changePassword=()=>{
+    const u=users.find(x=>x.id===Number(pwForm.uid));
+    if(!u){showToast(lang==="ar"?"مستخدم غير موجود":"User not found","error");return;}
+    if(u.password!==pwForm.current){showToast(lang==="ar"?"كلمة المرور الحالية غير صحيحة":"Current password is incorrect","error");return;}
+    if(!pwForm.newPw||pwForm.newPw.length<6){showToast(lang==="ar"?"كلمة المرور الجديدة قصيرة جداً (6 أحرف على الأقل)":"Password too short (min 6 chars)","error");return;}
+    if(pwForm.newPw!==pwForm.confirm){showToast(lang==="ar"?"كلمتا المرور غير متطابقتين":"Passwords don't match","error");return;}
+    setUsers(p=>p.map(x=>x.id===Number(pwForm.uid)?{...x,password:pwForm.newPw}:x));
+    showToast(lang==="ar"?"تم تغيير كلمة المرور بنجاح":"Password changed successfully");
+    setShowPwModal(false);setPwForm({uid:"",current:"",newPw:"",confirm:""});
+  };
 
   const PERM_GROUPS=[
     {label:lang==="ar"?"🔧 قطع الغيار":"🔧 Hardware",col:"#3b82f6",keys:["hardware_view","hardware_add","hardware_edit","hardware_delete"]},
@@ -1018,7 +1246,59 @@ function UsersSection({t,users,setUsers,showToast,lang,mobile,isRtl}) {
 
   return (
     <div>
-      <PH title={`👥 ${t.users}`} action={<Btn col="#b45309" onClick={()=>setShowF(!showF)}>+ {t.addUser}</Btn>}/>
+      <PH title={`👥 ${t.users}`} action={
+        <Row s={{gap:8}}>
+          <Btn col="#065f46" onClick={()=>{setShowPwModal(true);setPwForm({uid:"",current:"",newPw:"",confirm:""});}}>🔑 {lang==="ar"?"تغيير كلمة المرور":"Change Password"}</Btn>
+          <Btn col="#b45309" onClick={()=>setShowF(!showF)}>+ {t.addUser}</Btn>
+        </Row>
+      }/>
+
+      {/* Change Password Modal */}
+      {showPwModal&&(
+        <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+          <div style={{background:"#0a0f1e",border:"1px solid #1e2d44",borderRadius:18,padding:24,width:"100%",maxWidth:420,fontFamily:isRtl?"'Tajawal',sans-serif":"'Outfit',sans-serif"}}>
+            <Row s={{justifyContent:"space-between",marginBottom:20}}>
+              <h3 style={{color:"#fff",fontSize:16,fontWeight:700,margin:0}}>🔑 {lang==="ar"?"تغيير كلمة المرور":"Change Password"}</h3>
+              <button onClick={()=>setShowPwModal(false)} style={{background:"none",border:"none",color:"#6b7280",fontSize:22,cursor:"pointer"}}>✕</button>
+            </Row>
+            <div style={{display:"flex",flexDirection:"column",gap:12}}>
+              <FF label={lang==="ar"?"اختر المستخدم":"Select User"}>
+                <Sel value={pwForm.uid} onChange={e=>setPwForm(p=>({...p,uid:e.target.value}))}>
+                  <option value="">{lang==="ar"?"-- اختر --":"-- Select --"}</option>
+                  {users.map(u=><option key={u.id} value={u.id}>{lang==="ar"?u.name:u.nameEn} (@{u.username})</option>)}
+                </Sel>
+              </FF>
+              <FF label={lang==="ar"?"كلمة المرور الحالية":"Current Password"}>
+                <Inp type="password" value={pwForm.current} onChange={e=>setPwForm(p=>({...p,current:e.target.value}))} placeholder="••••••••"/>
+              </FF>
+              <FF label={lang==="ar"?"كلمة المرور الجديدة":"New Password"}>
+                <Inp type="password" value={pwForm.newPw} onChange={e=>setPwForm(p=>({...p,newPw:e.target.value}))} placeholder="••••••••"/>
+              </FF>
+              <FF label={lang==="ar"?"تأكيد كلمة المرور الجديدة":"Confirm New Password"}>
+                <Inp type="password" value={pwForm.confirm} onChange={e=>setPwForm(p=>({...p,confirm:e.target.value}))} placeholder="••••••••"/>
+              </FF>
+              {pwForm.newPw&&pwForm.confirm&&pwForm.newPw!==pwForm.confirm&&(
+                <div style={{color:"#f87171",fontSize:12,background:"#7f1d1d22",padding:"8px 12px",borderRadius:8}}>
+                  ⚠️ {lang==="ar"?"كلمتا المرور غير متطابقتين":"Passwords don't match"}
+                </div>
+              )}
+              {pwForm.newPw&&pwForm.newPw===pwForm.confirm&&pwForm.newPw.length>=6&&(
+                <div style={{color:"#34d399",fontSize:12,background:"#065f4622",padding:"8px 12px",borderRadius:8}}>
+                  ✅ {lang==="ar"?"كلمتا المرور متطابقتان":"Passwords match"}
+                </div>
+              )}
+            </div>
+            <Row s={{gap:10,marginTop:18}}>
+              <Btn onClick={changePassword} s={{flex:1}} col="#065f46">
+                {lang==="ar"?"حفظ التغييرات":"Save Changes"}
+              </Btn>
+              <OBtn onClick={()=>setShowPwModal(false)} s={{flex:1}}>
+                {t.cancel}
+              </OBtn>
+            </Row>
+          </div>
+        </div>
+      )}
 
       {/* Add User Form */}
       {showF&&<Card s={{marginBottom:16}}>
@@ -1111,12 +1391,19 @@ function UsersSection({t,users,setUsers,showToast,lang,mobile,isRtl}) {
       {/* User Cards */}
       <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"repeat(auto-fill,minmax(240px,1fr))",gap:13}}>
         {users.map(u=>(
-          <div key={u.id} style={{background:"#0d1321",border:"1px solid #1e2d44",borderRadius:14,padding:14}}>
+          <div key={u.id} style={{background:"#0d1321",border:`1px solid ${u.active===false&&u.role!=="admin"?"#7f1d1d44":"#1e2d44"}`,borderRadius:14,padding:14,opacity:u.active===false&&u.role!=="admin"?0.7:1}}>
             <Row s={{justifyContent:"space-between",marginBottom:12}}>
-              <div style={{width:40,height:40,borderRadius:10,background:u.role==="admin"?"linear-gradient(135deg,#b45309,#f59e0b)":"linear-gradient(135deg,#1d4ed8,#2563eb)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>{u.role==="admin"?"👑":"🔧"}</div>
-              <Badge col={u.role==="admin"?"#f59e0b":"#3b82f6"}>{u.role==="admin"?t.admin:t.technician}</Badge>
+              <div style={{width:40,height:40,borderRadius:10,background:u.role==="admin"?"linear-gradient(135deg,#b45309,#f59e0b)":u.active===false?"linear-gradient(135deg,#374151,#4b5563)":"linear-gradient(135deg,#1d4ed8,#2563eb)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>{u.role==="admin"?"👑":u.active===false?"🚫":"🔧"}</div>
+              <Row s={{gap:6}}>
+                {u.role!=="admin"&&(
+                  <Badge col={u.active===false?"#ef4444":"#10b981"}>
+                    {u.active===false?(lang==="ar"?"موقوف":"Disabled"):(lang==="ar"?"نشط":"Active")}
+                  </Badge>
+                )}
+                <Badge col={u.role==="admin"?"#f59e0b":"#3b82f6"}>{u.role==="admin"?t.admin:t.technician}</Badge>
+              </Row>
             </Row>
-            <div style={{fontSize:15,fontWeight:700,color:"#fff"}}>{lang==="ar"?u.name:u.nameEn}</div>
+            <div style={{fontSize:15,fontWeight:700,color:u.active===false&&u.role!=="admin"?"#6b7280":"#fff"}}>{lang==="ar"?u.name:u.nameEn}</div>
             <div style={{fontSize:11,color:"#374151",marginBottom:10}}>@{u.username}</div>
             {/* Permission Summary */}
             {u.role==="technician"&&(
@@ -1137,6 +1424,12 @@ function UsersSection({t,users,setUsers,showToast,lang,mobile,isRtl}) {
             )}
             <Row s={{gap:6}}>
               <button onClick={()=>setEditPermId(u.id)} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid #b4530944",background:"#78350f22",color:"#fbbf24",fontSize:12,cursor:"pointer"}}>⚙️ {t.permissions}</button>
+              {u.role!=="admin"&&(
+                <button onClick={()=>setUsers(p=>p.map(x=>x.id===u.id?{...x,active:x.active===false?true:false}:x))}
+                  style={{padding:"8px 10px",borderRadius:8,border:u.active===false?"1px solid #065f4644":"1px solid #7f1d1d44",background:u.active===false?"#065f4622":"#7f1d1d22",color:u.active===false?"#34d399":"#f87171",fontSize:12,cursor:"pointer"}}>
+                  {u.active===false?(lang==="ar"?"تشغيل ✅":"Enable ✅"):(lang==="ar"?"إيقاف 🚫":"Disable 🚫")}
+                </button>
+              )}
               {u.id!==1&&<button onClick={()=>setUsers(p=>p.filter(x=>x.id!==u.id))} style={{padding:"8px 12px",borderRadius:8,border:"1px solid #7f1d1d44",background:"#7f1d1d22",color:"#f87171",fontSize:12,cursor:"pointer"}}>{t.delete}</button>}
             </Row>
           </div>
