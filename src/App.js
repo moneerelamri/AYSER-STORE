@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // ════════════════════════════════════════════════════
 //  PERMISSIONS & INITIAL DATA
@@ -355,10 +355,7 @@ function Login({t,lang,setLang,users,onLogin,isRtl}) {
         <div style={{marginBottom:18}}><FF label={t.password}><Inp type="password" value={pw} onChange={e=>setPw(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&go()}/></FF></div>
         {err&&<div style={{background:"#7f1d1d33",border:"1px solid #7f1d1d44",borderRadius:9,padding:"9px 13px",color:"#f87171",fontSize:12,marginBottom:14,textAlign:"center"}}>{err}</div>}
         <Btn onClick={go} full s={{padding:"13px",fontSize:15}}>🚀 {t.loginBtn}</Btn>
-        <div style={{marginTop:18,background:"#070b14",borderRadius:9,padding:"11px 14px",fontSize:11,color:"#6b7280",lineHeight:1.8}}>
-          <div>👤 admin / admin123 → {t.admin}</div>
-          <div>👤 tech1 / tech123 → {t.technician}</div>
-        </div>
+
       </div>
     </div>
   );
