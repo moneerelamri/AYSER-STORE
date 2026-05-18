@@ -18,8 +18,8 @@ const INIT_USERS = [
   {id:2,username:"tech1",password:"tech123",role:"technician",name:"فني الصيانة",nameEn:"Technician",permissions:{...DEFAULT_PERMS}},
 ];
 const INIT_PARTS = [
-  {id:1,name:"شاشة LCD",nameEn:"LCD Screen",costPrice:120,sellPrice:200,stock:15,currency:"LYD",addedBy:1,addedByName:"المدير",addedByNameEn:"Admin",date:"2026-05-01",time:"09:00:00"},
-  {id:2,name:"بطارية",nameEn:"Battery",costPrice:30,sellPrice:60,stock:40,currency:"LYD",addedBy:1,addedByName:"المدير",addedByNameEn:"Admin",date:"2026-05-03",time:"10:30:00"},
+  {id:1,name:"شاشة LCD",nameEn:"LCD Screen",costPrice:120,sellPrice:200,stock:15,currency:"LYD",barcode:"AY1001001",addedBy:1,addedByName:"المدير",addedByNameEn:"Admin",date:"2026-05-01",time:"09:00:00"},
+  {id:2,name:"بطارية",nameEn:"Battery",costPrice:30,sellPrice:60,stock:40,currency:"LYD",barcode:"AY1001002",addedBy:1,addedByName:"المدير",addedByNameEn:"Admin",date:"2026-05-03",time:"10:30:00"},
 ];
 const INIT_TOOLS = [
   {id:1,name:"برنامج فك الحماية",nameEn:"Unlock Software",price:50,currency:"USD",subscriptionType:"yearly",expiryDate:"2027-05-01",addedBy:1,addedByName:"المدير",addedByNameEn:"Admin",date:"2026-05-01",time:"09:00:00"},
@@ -215,6 +215,7 @@ export default function App() {
   const [mobile,setMobile] = useState(window.innerWidth<768);
   const [storeInfo,setStoreInfo] = useState({phone:"",phone2:"",address:"",addressEn:"",maps:""});
   const [logo,setLogo] = useState("");
+  const [pwRequests,setPwRequests] = useState([]);
 
   const t = T[lang]; const isRtl = lang==="ar";
   const isAdmin = user?.role==="admin";
@@ -244,7 +245,7 @@ export default function App() {
       const dev = devices.find(d=>String(d.id)===trackId);
       return <TrackingPage dev={dev} trackId={trackId} lang={lang} setLang={setLang} isRtl={isRtl}/>;
     }
-    return <Login t={t} lang={lang} setLang={setLang} users={users} onLogin={u=>{setUser(u);setTab("dashboard");}} isRtl={isRtl} logo={logo}/>;
+    return <Login t={t} lang={lang} setLang={setLang} users={users} onLogin={u=>{setUser(u);setTab("dashboard");}} isRtl={isRtl} logo={logo} pwRequests={pwRequests} setPwRequests={setPwRequests}/>;
   }
 
   const NAV=[
@@ -255,7 +256,7 @@ export default function App() {
     {id:"invoices",icon:"🧾",label:t.invoices,ok:can("invoices_view")},
     {id:"reports",icon:"📈",label:t.reports,ok:can("reports_view")},
     {id:"activity",icon:"🕵️",label:t.activityLog,ok:isAdmin},
-    {id:"users",icon:"👥",label:t.users,ok:isAdmin},
+    {id:"users",icon:"👥",label:t.users,ok:isAdmin,badge:pwRequests.filter(r=>!r.done).length},
     {id:"store",icon:"🏪",label:lang==="ar"?"إعدادات المتجر":"Store Settings",ok:isAdmin},
     {id:"backup",icon:"🗄️",label:t.backup,ok:isAdmin},
   ].filter(n=>n.ok);
@@ -287,7 +288,9 @@ export default function App() {
       <nav style={{flex:1,padding:"8px 6px",overflowY:"auto"}}>
         {NAV.map(n=>(
           <button key={n.id} onClick={()=>go(n.id)} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"10px 11px",borderRadius:9,border:"none",cursor:"pointer",marginBottom:2,background:tab===n.id?"#1e3a5f":"transparent",color:tab===n.id?"#60a5fa":"#6b7280",fontSize:13,fontWeight:tab===n.id?600:400,textAlign:isRtl?"right":"left",transition:"all .15s",borderInlineStart:tab===n.id?"3px solid #3b82f6":"3px solid transparent"}}>
-            <span style={{fontSize:16}}>{n.icon}</span>{n.label}
+            <span style={{fontSize:16}}>{n.icon}</span>
+            <span style={{flex:1}}>{n.label}</span>
+            {n.badge>0&&<span style={{background:"#ef4444",color:"#fff",fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:10,minWidth:18,textAlign:"center"}}>{n.badge}</span>}
           </button>
         ))}
       </nav>
@@ -341,7 +344,7 @@ export default function App() {
           {tab==="invoices"&&<InvoicesSection t={t} invoices={invoices} setInvoices={setInvoices} parts={parts} setParts={setParts} user={user} showToast={showToast} lang={lang} isAdmin={isAdmin} logA={logA} can={can} mobile={mobile} storeInfo={storeInfo}/>}
           {tab==="reports"&&<ReportsSection t={t} invoices={invoices} parts={parts} isAdmin={isAdmin} lang={lang} mobile={mobile} can={can}/>}
           {tab==="activity"&&isAdmin&&<ActivitySection t={t} log={log} setLog={setLog} users={users} lang={lang} mobile={mobile}/>}
-          {tab==="users"&&isAdmin&&<UsersSection t={t} users={users} setUsers={setUsers} showToast={showToast} lang={lang} mobile={mobile} isRtl={isRtl}/>}
+          {tab==="users"&&isAdmin&&<UsersSection t={t} users={users} setUsers={setUsers} showToast={showToast} lang={lang} mobile={mobile} isRtl={isRtl} pwRequests={pwRequests} setPwRequests={setPwRequests}/>}
           {tab==="store"&&isAdmin&&<StoreSettings lang={lang} storeInfo={storeInfo} setStoreInfo={setStoreInfo} showToast={showToast} mobile={mobile} logo={logo} setLogo={setLogo}/>}
           {tab==="backup"&&isAdmin&&<BackupSection t={t} users={users} parts={parts} tools={tools} invoices={invoices} devices={devices} setUsers={setUsers} setParts={setParts} setTools={setTools} setInvoices={setInvoices} setDevices={setDevices} showToast={showToast} lang={lang} lastBk={lastBk} user={user} mobile={mobile}/>}
         </div>
@@ -353,8 +356,11 @@ export default function App() {
 // ════════════════════════════════════════════════════
 //  LOGIN
 // ════════════════════════════════════════════════════
-function Login({t,lang,setLang,users,onLogin,isRtl,logo}) {
+function Login({t,lang,setLang,users,onLogin,isRtl,logo,pwRequests,setPwRequests}) {
   const [un,setUn]=useState(""); const [pw,setPw]=useState(""); const [err,setErr]=useState("");
+  const [showForgot,setShowForgot]=useState(false);
+  const [forgotUn,setForgotUn]=useState(""); const [forgotSent,setForgotSent]=useState(false);
+
   const go=()=>{
     const u=users.find(x=>x.username===un&&x.password===pw);
     if(u){
@@ -362,6 +368,15 @@ function Login({t,lang,setLang,users,onLogin,isRtl,logo}) {
       onLogin(u);setErr("");
     }else setErr(t.invalidLogin);
   };
+
+  const sendForgot=()=>{
+    const u=users.find(x=>x.username===forgotUn&&x.role!=="admin");
+    if(!u){setErr(lang==="ar"?"اسم المستخدم غير موجود":"Username not found");return;}
+    const req={id:genId(),userId:u.id,userName:u.name,userNameEn:u.nameEn,username:u.username,requestedAt:nowDT().iso,date:nowDT().date,time:nowDT().time,done:false};
+    setPwRequests(p=>[req,...p]);
+    setForgotSent(true);
+  };
+
   return (
     <div dir={isRtl?"rtl":"ltr"} style={{minHeight:"100vh",background:"linear-gradient(135deg,#070b14,#0d1321)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:isRtl?"'Tajawal',sans-serif":"'Outfit',sans-serif",padding:16}}>
       <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet"/>
@@ -369,25 +384,64 @@ function Login({t,lang,setLang,users,onLogin,isRtl,logo}) {
       <div style={{position:"fixed",top:"15%",left:"5%",width:350,height:350,background:"radial-gradient(circle,#1d4ed820,transparent 70%)",borderRadius:"50%",pointerEvents:"none"}}/>
       <div style={{width:"100%",maxWidth:420,background:"#0d1321cc",backdropFilter:"blur(20px)",borderRadius:20,border:"1px solid #1e2d44",padding:"32px 28px",boxShadow:"0 32px 80px #000a"}}>
         <div style={{textAlign:"center",marginBottom:28}}>
-          {/* Logo */}
           <div style={{width:90,height:90,borderRadius:22,background:"linear-gradient(135deg,#2563eb,#1d4ed8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:40,margin:"0 auto 16px",overflow:"hidden",boxShadow:"0 8px 32px #2563eb44"}}>
-            {logo
-              ? <img src={logo} alt="logo" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-              : "📱"
-            }
+            {logo?<img src={logo} alt="logo" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:"📱"}
           </div>
           <h1 style={{fontSize:24,fontWeight:800,color:"#fff",margin:0}}>{t.appTitle}</h1>
           <p style={{color:"#6b7280",fontSize:12,marginTop:5}}>{t.appSubtitle}</p>
         </div>
-        <Row s={{gap:8,marginBottom:22}}>
-          {["ar","en"].map(l=><button key={l} onClick={()=>setLang(l)} style={{flex:1,padding:"8px",borderRadius:9,border:"1px solid",borderColor:lang===l?"#2563eb":"#1e2d44",background:lang===l?"#1e3a5f":"transparent",color:lang===l?"#60a5fa":"#6b7280",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
-            {l==="ar"?"🇱🇾 العربية":"🇺🇸 English"}
-          </button>)}
-        </Row>
-        <div style={{marginBottom:14}}><FF label={t.username}><Inp value={un} onChange={e=>setUn(e.target.value)} placeholder={t.username}/></FF></div>
-        <div style={{marginBottom:18}}><FF label={t.password}><Inp type="password" value={pw} onChange={e=>setPw(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&go()}/></FF></div>
-        {err&&<div style={{background:"#7f1d1d33",border:"1px solid #7f1d1d44",borderRadius:9,padding:"9px 13px",color:"#f87171",fontSize:12,marginBottom:14,textAlign:"center"}}>{err}</div>}
-        <Btn onClick={go} full s={{padding:"13px",fontSize:15}}>🚀 {t.loginBtn}</Btn>
+
+        {!showForgot ? (
+          <>
+            <Row s={{gap:8,marginBottom:22}}>
+              {["ar","en"].map(l=><button key={l} onClick={()=>setLang(l)} style={{flex:1,padding:"8px",borderRadius:9,border:"1px solid",borderColor:lang===l?"#2563eb":"#1e2d44",background:lang===l?"#1e3a5f":"transparent",color:lang===l?"#60a5fa":"#6b7280",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+                {l==="ar"?"🇱🇾 العربية":"🇺🇸 English"}
+              </button>)}
+            </Row>
+            <div style={{marginBottom:14}}><FF label={t.username}><Inp value={un} onChange={e=>setUn(e.target.value)} placeholder={t.username}/></FF></div>
+            <div style={{marginBottom:8}}><FF label={t.password}><Inp type="password" value={pw} onChange={e=>setPw(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&go()}/></FF></div>
+            {/* Forgot password link */}
+            <div style={{textAlign:isRtl?"left":"right",marginBottom:16}}>
+              <button onClick={()=>{setShowForgot(true);setErr("");setForgotSent(false);setForgotUn("");}} style={{background:"none",border:"none",color:"#60a5fa",fontSize:12,cursor:"pointer",textDecoration:"underline"}}>
+                🔑 {lang==="ar"?"نسيت كلمة المرور؟":"Forgot password?"}
+              </button>
+            </div>
+            {err&&<div style={{background:"#7f1d1d33",border:"1px solid #7f1d1d44",borderRadius:9,padding:"9px 13px",color:"#f87171",fontSize:12,marginBottom:14,textAlign:"center"}}>{err}</div>}
+            <Btn onClick={go} full s={{padding:"13px",fontSize:15}}>🚀 {t.loginBtn}</Btn>
+          </>
+        ) : (
+          <div>
+            <h3 style={{color:"#fff",fontSize:15,fontWeight:700,marginBottom:14,textAlign:"center"}}>
+              🔑 {lang==="ar"?"نسيت كلمة المرور؟":"Forgot Password?"}
+            </h3>
+            {!forgotSent ? (
+              <>
+                <p style={{fontSize:12,color:"#6b7280",marginBottom:16,textAlign:"center",lineHeight:1.8}}>
+                  {lang==="ar"?"أدخل اسم المستخدم الخاص بك وسيصل إشعار للمدير لتغيير كلمة المرور":"Enter your username and an alert will be sent to admin to reset your password"}
+                </p>
+                <div style={{marginBottom:14}}><FF label={t.username}><Inp value={forgotUn} onChange={e=>setForgotUn(e.target.value)} placeholder={t.username}/></FF></div>
+                {err&&<div style={{background:"#7f1d1d33",border:"1px solid #7f1d1d44",borderRadius:9,padding:"9px 13px",color:"#f87171",fontSize:12,marginBottom:12,textAlign:"center"}}>{err}</div>}
+                <Row s={{gap:10}}>
+                  <Btn onClick={sendForgot} s={{flex:1}}>📨 {lang==="ar"?"إرسال الطلب":"Send Request"}</Btn>
+                  <OBtn onClick={()=>{setShowForgot(false);setErr("");}} s={{flex:1}}>{lang==="ar"?"رجوع":"Back"}</OBtn>
+                </Row>
+              </>
+            ) : (
+              <div style={{textAlign:"center"}}>
+                <div style={{fontSize:48,marginBottom:12}}>✅</div>
+                <p style={{color:"#34d399",fontSize:14,fontWeight:600,marginBottom:8}}>
+                  {lang==="ar"?"تم إرسال الطلب بنجاح!":"Request sent successfully!"}
+                </p>
+                <p style={{color:"#6b7280",fontSize:12,marginBottom:20,lineHeight:1.8}}>
+                  {lang==="ar"?"تواصل مع المدير وسيقوم بتغيير كلمة المرور الخاصة بك":"Contact the admin and they will reset your password"}
+                </p>
+                <OBtn onClick={()=>{setShowForgot(false);setForgotSent(false);}} s={{width:"100%",textAlign:"center"}}>
+                  ← {lang==="ar"?"رجوع لتسجيل الدخول":"Back to Login"}
+                </OBtn>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -846,13 +900,61 @@ function PrintDevice({dev,t,lang,onBack,storeInfo={},logo=""}) {
 }
 
 // ════════════════════════════════════════════════════
+//  BARCODE GENERATOR HELPER
+// ════════════════════════════════════════════════════
+const genBarcode = (existingCodes=[]) => {
+  let code;
+  do { code = "AY" + String(Math.floor(Math.random()*9000000+1000000)); }
+  while(existingCodes.includes(code));
+  return code;
+};
+
+// Draw barcode on canvas using Code128-like visual
+function BarcodeCanvas({code,width=200,height=60}) {
+  const ref = useRef();
+  useEffect(()=>{
+    if(!ref.current||!code)return;
+    const canvas=ref.current; const ctx=canvas.getContext("2d");
+    canvas.width=width; canvas.height=height;
+    ctx.fillStyle="#ffffff"; ctx.fillRect(0,0,width,height);
+    // Simple visual barcode from code chars
+    const bars=[1,0,1,1,0,1,0,0,1,1]; // start
+    for(let i=0;i<code.length;i++){
+      const c=code.charCodeAt(i);
+      for(let b=0;b<8;b++) bars.push((c>>b)&1);
+    }
+    bars.push(...[1,1,0,1,0,1,1,0,1,0,1]); // stop
+    const bw=width/bars.length;
+    bars.forEach((b,i)=>{
+      ctx.fillStyle=b?"#000000":"#ffffff";
+      ctx.fillRect(i*bw,0,bw,height*0.85);
+    });
+    ctx.fillStyle="#000000"; ctx.font=`${Math.min(10,height*0.14)}px monospace`;
+    ctx.textAlign="center"; ctx.fillText(code,width/2,height);
+  },[code,width,height]);
+  return <canvas ref={ref} style={{display:"block"}}/>;
+}
+
+// ════════════════════════════════════════════════════
 //  HARDWARE
 // ════════════════════════════════════════════════════
 function HardwareSection({t,parts,setParts,isAdmin,showToast,user,lang,logA,can,mobile}) {
-  const [showF,setShowF]=useState(false); const [search,setSearch]=useState(""); const [editId,setEditId]=useState(null);
+  const [showF,setShowF]=useState(false);
+  const [search,setSearch]=useState("");
+  const [editId,setEditId]=useState(null);
+  const [printPart,setPrintPart]=useState(null);
+  const [scanning,setScanning]=useState(false);
+  const [scanResult,setScanResult]=useState("");
+  const [scanInput,setScanInput]=useState("");
   const empty={name:"",nameEn:"",costPrice:"",sellPrice:"",stock:"",currency:"LYD"};
   const [form,setForm]=useState(empty);
-  const filtered=parts.filter(p=>p.name.includes(search)||p.nameEn.toLowerCase().includes(search.toLowerCase()));
+
+  const filtered=parts.filter(p=>
+    p.name.includes(search)||
+    p.nameEn.toLowerCase().includes(search.toLowerCase())||
+    (p.barcode&&p.barcode.includes(search))
+  );
+
   const save=()=>{
     if(!form.name||!form.sellPrice)return;
     const dt=nowDT();
@@ -860,18 +962,106 @@ function HardwareSection({t,parts,setParts,isAdmin,showToast,user,lang,logA,can,
       setParts(p=>p.map(x=>x.id===editId?{...x,...form,sellPrice:+form.sellPrice,costPrice:+form.costPrice,stock:+form.stock,lastEditBy:user.id,lastEditAt:dt.iso}:x));
       logA("edit","hardware",lang==="ar"?`تعديل: ${form.name}`:`Edited: ${form.nameEn}`);
     } else {
-      setParts(p=>[...p,{id:genId(),...form,sellPrice:+form.sellPrice,costPrice:+form.costPrice,stock:+form.stock,addedBy:user.id,addedByName:user.name,addedByNameEn:user.nameEn,date:dt.date,time:dt.time}]);
+      const allCodes=parts.map(x=>x.barcode).filter(Boolean);
+      const bc=genBarcode(allCodes);
+      setParts(p=>[...p,{id:genId(),...form,barcode:bc,sellPrice:+form.sellPrice,costPrice:+form.costPrice,stock:+form.stock,addedBy:user.id,addedByName:user.name,addedByNameEn:user.nameEn,date:dt.date,time:dt.time}]);
       showToast(lang==="ar"?"تمت إضافة القطعة":"Part added");
       logA("add","hardware",lang==="ar"?`إضافة: ${form.name}`:`Added: ${form.nameEn}`);
     }
     setForm(empty);setShowF(false);setEditId(null);
   };
+
   const startEdit=(p)=>{setForm({name:p.name,nameEn:p.nameEn,costPrice:p.costPrice,sellPrice:p.sellPrice,stock:p.stock,currency:p.currency});setEditId(p.id);setShowF(true);};
   const del=(id)=>{const p=parts.find(x=>x.id===id);logA("delete","hardware",lang==="ar"?`حذف: ${p?.name}`:`Deleted: ${p?.nameEn}`);setParts(p=>p.filter(x=>x.id!==id));};
+
+  // Barcode scan lookup
+  const doScan=()=>{
+    const found=parts.find(p=>p.barcode===scanInput.trim());
+    if(found){setScanResult(found);setScanInput("");}
+    else{setScanResult("notfound");setScanInput("");}
+  };
+
   if(!can("hardware_view"))return <NoAccess t={t}/>;
+
+  // Print barcode label view
+  if(printPart) return (
+    <div>
+      <div className="np" style={{marginBottom:16,display:"flex",gap:10}}>
+        <OBtn onClick={()=>setPrintPart(null)}>← {t.cancel}</OBtn>
+        <Btn onClick={()=>window.print()}>🖨️ {t.print}</Btn>
+      </div>
+      <div style={{maxWidth:340,margin:"0 auto",background:"#fff",borderRadius:12,padding:20,textAlign:"center",border:"2px solid #1e2d44"}}>
+        <div style={{fontSize:13,fontWeight:700,color:"#000",marginBottom:4}}>متجر ayser</div>
+        <div style={{fontSize:14,fontWeight:800,color:"#000",marginBottom:2}}>{lang==="ar"?printPart.name:printPart.nameEn}</div>
+        <div style={{fontSize:12,color:"#374151",marginBottom:8}}>{fmtCur(printPart.sellPrice,printPart.currency)}</div>
+        <div style={{display:"flex",justifyContent:"center",marginBottom:6}}>
+          <BarcodeCanvas code={printPart.barcode} width={220} height={65}/>
+        </div>
+        <div style={{fontSize:11,color:"#374151",fontFamily:"monospace",letterSpacing:2}}>{printPart.barcode}</div>
+      </div>
+    </div>
+  );
+
   return (
     <div>
-      <PH title={`🔧 ${t.hardware}`} action={can("hardware_add")&&<Btn onClick={()=>{setShowF(!showF);setEditId(null);setForm(empty);}}>+ {t.addPart}</Btn>}/>
+      <PH title={`🔧 ${t.hardware}`} action={
+        <Row s={{gap:8}}>
+          <OBtn onClick={()=>setScanning(!scanning)} tc="#fbbf24" col="#78350f" sm>
+            📷 {lang==="ar"?"قراءة باركود":"Scan Barcode"}
+          </OBtn>
+          {can("hardware_add")&&<Btn onClick={()=>{setShowF(!showF);setEditId(null);setForm(empty);}}>+ {t.addPart}</Btn>}
+        </Row>
+      }/>
+
+      {/* Barcode Scanner Panel */}
+      {scanning&&(
+        <Card s={{marginBottom:14,border:"1px solid #78350f44",background:"#1c1008"}}>
+          <h3 style={{fontSize:13,color:"#fbbf24",marginBottom:12,fontWeight:700}}>
+            📷 {lang==="ar"?"قراءة الباركود":"Barcode Scanner"}
+          </h3>
+          <div style={{fontSize:11,color:"#6b7280",marginBottom:10}}>
+            {lang==="ar"
+              ?"اتصل بقارئ الباركود الخارجي أو اكتب الباركود يدوياً ثم اضغط Enter"
+              :"Connect external barcode scanner or type barcode manually then press Enter"}
+          </div>
+          <Row s={{gap:8}}>
+            <Inp
+              value={scanInput}
+              onChange={e=>setScanInput(e.target.value)}
+              placeholder={lang==="ar"?"امسح أو اكتب الباركود...":"Scan or type barcode..."}
+              s={{flex:1,fontSize:14,fontFamily:"monospace"}}
+              onKeyDown={e=>e.key==="Enter"&&doScan()}
+            />
+            <Btn onClick={doScan} col="#78350f">🔍</Btn>
+            <OBtn onClick={()=>{setScanning(false);setScanResult("");setScanInput("");}}>✕</OBtn>
+          </Row>
+          {scanResult&&scanResult==="notfound"&&(
+            <div style={{marginTop:10,padding:"10px 14px",background:"#7f1d1d22",borderRadius:9,color:"#f87171",fontSize:13}}>
+              ❌ {lang==="ar"?"لم يتم العثور على هذا الباركود":"Barcode not found"}
+            </div>
+          )}
+          {scanResult&&scanResult!=="notfound"&&(
+            <div style={{marginTop:10,padding:14,background:"#065f4622",border:"1px solid #065f4644",borderRadius:9}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#34d399",marginBottom:8}}>✅ {lang==="ar"?scanResult.name:scanResult.nameEn}</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                {[
+                  [lang==="ar"?"الباركود":"Barcode",scanResult.barcode],
+                  [lang==="ar"?"سعر البيع":"Sell Price",fmtCur(scanResult.sellPrice,scanResult.currency)],
+                  [lang==="ar"?"المخزون":"Stock",scanResult.stock],
+                  [lang==="ar"?"العملة":"Currency",scanResult.currency],
+                ].map(([k,v],i)=>(
+                  <div key={i} style={{background:"#070b14",borderRadius:7,padding:"7px 10px"}}>
+                    <div style={{fontSize:10,color:"#6b7280"}}>{k}</div>
+                    <div style={{fontSize:13,color:"#e2e8f0",fontWeight:600}}>{v}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* Add/Edit Form */}
       {showF&&<Card s={{marginBottom:14}}>
         <h3 style={{fontSize:14,color:"#e2e8f0",marginBottom:12,fontWeight:700}}>{editId?"✏️ "+t.edit:"➕ "+t.addPart}</h3>
         <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"1fr 1fr",gap:11}}>
@@ -882,26 +1072,57 @@ function HardwareSection({t,parts,setParts,isAdmin,showToast,user,lang,logA,can,
           <FF label={t.stock}><Inp type="number" value={form.stock} onChange={e=>setForm(p=>({...p,stock:e.target.value}))}/></FF>
           <FF label={t.currency}><Sel value={form.currency} onChange={e=>setForm(p=>({...p,currency:e.target.value}))}><option value="LYD">{t.lyd}</option><option value="USD">{t.usd}</option></Sel></FF>
         </div>
+        {!editId&&<div style={{marginTop:10,fontSize:11,color:"#6b7280",background:"#070b14",borderRadius:8,padding:"8px 12px"}}>
+          🔖 {lang==="ar"?"سيتم توليد باركود فريد تلقائياً عند الحفظ":"A unique barcode will be generated automatically on save"}
+        </div>}
         <Row s={{gap:10,marginTop:12}}><Btn onClick={save}>{t.save}</Btn><OBtn onClick={()=>{setShowF(false);setEditId(null);}}>{t.cancel}</OBtn></Row>
       </Card>}
-      <div style={{marginBottom:12}}><Inp value={search} onChange={e=>setSearch(e.target.value)} placeholder={t.search} s={{maxWidth:220}}/></div>
+
+      {/* Search */}
+      <Row s={{gap:8,marginBottom:12,flexWrap:"wrap"}}>
+        <Inp value={search} onChange={e=>setSearch(e.target.value)} placeholder={lang==="ar"?"بحث بالاسم أو الباركود...":"Search by name or barcode..."} s={{maxWidth:280}}/>
+        <span style={{fontSize:12,color:"#6b7280",padding:"8px 0"}}>{filtered.length} {lang==="ar"?"صنف":"items"}</span>
+      </Row>
+
+      {/* Table */}
       <div className="sx">
-        <table style={{minWidth:500,width:"100%",borderCollapse:"collapse"}}>
+        <table style={{minWidth:620,width:"100%",borderCollapse:"collapse"}}>
           <thead><tr style={{background:"#070b14"}}>
-            {[t.partName,...(isAdmin?[t.costPriceAdmin]:[]),t.sellPrice,t.stock,t.currency,t.dateTime,...(isAdmin?[t.enteredBy,""]:[])].map((h,i)=><th key={i} style={{padding:"10px 14px",fontSize:11,color:"#6b7280",fontWeight:500,textAlign:"inherit",whiteSpace:"nowrap"}}>{h}</th>)}
+            {[
+              lang==="ar"?"رقم الصنف":"Item #",
+              t.partName,
+              lang==="ar"?"الباركود":"Barcode",
+              ...(isAdmin?[t.costPriceAdmin]:[]),
+              t.sellPrice,
+              t.stock,
+              t.currency,
+              ...(isAdmin?[t.enteredBy,""]:[]),
+            ].map((h,i)=><th key={i} style={{padding:"10px 12px",fontSize:11,color:"#6b7280",fontWeight:500,textAlign:"inherit",whiteSpace:"nowrap"}}>{h}</th>)}
           </tr></thead>
           <tbody>
             {filtered.map(p=>(
               <tr key={p.id} style={{borderTop:"1px solid #1e2d4411"}}>
-                <td style={{padding:"10px 14px",fontSize:13,color:"#e2e8f0"}}>{lang==="ar"?p.name:p.nameEn}</td>
-                {isAdmin&&<td style={{padding:"10px 14px",fontSize:13,color:"#f87171"}}>{fmtCur(p.costPrice,p.currency)}</td>}
-                <td style={{padding:"10px 14px",fontSize:13,color:"#10b981",fontWeight:600}}>{fmtCur(p.sellPrice,p.currency)}</td>
-                <td style={{padding:"10px 14px",fontSize:13,color:p.stock<5?"#f59e0b":"#e2e8f0"}}>{p.stock}</td>
-                <td style={{padding:"10px 14px",fontSize:12,color:"#6b7280"}}>{p.currency}</td>
-                <td style={{padding:"10px 14px",fontSize:11,color:"#374151",whiteSpace:"nowrap"}}><div>{p.date}</div><div style={{color:"#1e2d44"}}>{p.time}</div></td>
-                {isAdmin&&<td style={{padding:"10px 14px",fontSize:12,color:"#8b5cf6",whiteSpace:"nowrap"}}>{lang==="ar"?p.addedByName:p.addedByNameEn}</td>}
-                {isAdmin&&<td style={{padding:"10px 14px"}}>
-                  <Row s={{gap:6}}>
+                <td style={{padding:"10px 12px",fontSize:11,color:"#374151",fontFamily:"monospace"}}>{p.id}</td>
+                <td style={{padding:"10px 12px",fontSize:13,color:"#e2e8f0",fontWeight:600}}>
+                  <div>{lang==="ar"?p.name:p.nameEn}</div>
+                  {p.stock<5&&<div style={{fontSize:10,color:"#f59e0b"}}>⚠️ {lang==="ar"?"مخزون منخفض":"Low stock"}</div>}
+                </td>
+                <td style={{padding:"10px 12px"}}>
+                  {p.barcode?(
+                    <div>
+                      <div style={{fontSize:10,fontFamily:"monospace",color:"#60a5fa",letterSpacing:1,marginBottom:3}}>{p.barcode}</div>
+                      <BarcodeCanvas code={p.barcode} width={100} height={28}/>
+                    </div>
+                  ):<span style={{fontSize:10,color:"#374151"}}>—</span>}
+                </td>
+                {isAdmin&&<td style={{padding:"10px 12px",fontSize:13,color:"#f87171"}}>{fmtCur(p.costPrice,p.currency)}</td>}
+                <td style={{padding:"10px 12px",fontSize:13,color:"#10b981",fontWeight:600}}>{fmtCur(p.sellPrice,p.currency)}</td>
+                <td style={{padding:"10px 12px",fontSize:13,color:p.stock<5?"#f59e0b":"#e2e8f0"}}>{p.stock}</td>
+                <td style={{padding:"10px 12px",fontSize:12,color:"#6b7280"}}>{p.currency}</td>
+                {isAdmin&&<td style={{padding:"10px 12px",fontSize:12,color:"#8b5cf6",whiteSpace:"nowrap"}}>{lang==="ar"?p.addedByName:p.addedByNameEn}</td>}
+                {isAdmin&&<td style={{padding:"10px 12px"}}>
+                  <Row s={{gap:5}}>
+                    {p.barcode&&<OBtn onClick={()=>setPrintPart(p)} sm tc="#fbbf24" col="#78350f">🖨️</OBtn>}
                     {can("hardware_edit")&&<OBtn onClick={()=>startEdit(p)} sm tc="#60a5fa" col="#1d4ed8">{t.edit}</OBtn>}
                     {can("hardware_delete")&&<OBtn onClick={()=>del(p.id)} sm tc="#f87171" col="#7f1d1d">{t.delete}</OBtn>}
                   </Row>
@@ -988,10 +1209,14 @@ function SoftwareSection({t,tools,setTools,isAdmin,showToast,user,lang,logA,can,
 // ════════════════════════════════════════════════════
 function InvoicesSection({t,invoices,setInvoices,parts,setParts,user,showToast,lang,isAdmin,logA,can,mobile}) {
   const [showF,setShowF]=useState(false); const [printInv,setPrintInv]=useState(null);
+  const [editInv,setEditInv]=useState(null);
   const [form,setForm]=useState({customerName:"",customerPhone:"",items:[],currency:"LYD"});
   const [selPart,setSelPart]=useState(""); const [qty,setQty]=useState(1);
+  const [delConfirm,setDelConfirm]=useState(null);
+
   const addItem=()=>{const p=parts.find(x=>x.id===Number(selPart));if(!p)return;setForm(f=>({...f,items:[...f.items,{partId:p.id,partName:lang==="ar"?p.name:p.nameEn,qty:+qty,price:p.sellPrice,currency:p.currency}]}));setSelPart("");setQty(1);};
   const total=form.items.reduce((s,i)=>s+i.qty*i.price,0);
+
   const create=()=>{
     if(!form.customerName||form.items.length===0)return;
     const dt=nowDT();
@@ -1002,13 +1227,60 @@ function InvoicesSection({t,invoices,setInvoices,parts,setParts,user,showToast,l
     logA("invoice","invoices",`${form.customerName} — ${fmtCur(total,"LYD")}`);
     setForm({customerName:"",customerPhone:"",items:[],currency:"LYD"});setShowF(false);
   };
+
+  const startEdit=(inv)=>{
+    setEditInv(inv);
+    setForm({customerName:inv.customerName,customerPhone:inv.customerPhone,items:[...inv.items],currency:inv.currency||"LYD"});
+    setShowF(true);
+  };
+
+  const saveEdit=()=>{
+    if(!form.customerName||form.items.length===0)return;
+    const newTotal=form.items.reduce((s,i)=>s+i.qty*i.price,0);
+    setInvoices(p=>p.map(x=>x.id===editInv.id?{...x,...form,total:newTotal,editedAt:nowDT().iso,editedBy:user.name}:x));
+    showToast(lang==="ar"?"تم تعديل الفاتورة":"Invoice updated");
+    logA("edit","invoices",lang==="ar"?`تعديل فاتورة #${editInv.id}`:`Edit invoice #${editInv.id}`);
+    setForm({customerName:"",customerPhone:"",items:[],currency:"LYD"});
+    setShowF(false);setEditInv(null);
+  };
+
+  const delInv=(inv)=>{
+    setInvoices(p=>p.filter(x=>x.id!==inv.id));
+    // restore stock
+    inv.items.forEach(i=>setParts(p=>p.map(x=>x.id===i.partId?{...x,stock:x.stock+i.qty}:x)));
+    showToast(lang==="ar"?"تم حذف الفاتورة":"Invoice deleted");
+    logA("delete","invoices",lang==="ar"?`حذف فاتورة #${inv.id}`:`Deleted invoice #${inv.id}`);
+    setDelConfirm(null);
+  };
+
   if(!can("invoices_view"))return <NoAccess t={t}/>;
   if(printInv) return <PrintInv inv={printInv} t={t} lang={lang} onBack={()=>setPrintInv(null)}/>;
   return (
     <div>
-      <PH title={`🧾 ${t.invoices}`} action={can("invoices_add")&&<Btn col="#065f46" onClick={()=>setShowF(!showF)}>+ {t.newInvoice}</Btn>}/>
+      <PH title={`🧾 ${t.invoices}`} action={can("invoices_add")&&<Btn col="#065f46" onClick={()=>{setShowF(!showF);setEditInv(null);setForm({customerName:"",customerPhone:"",items:[],currency:"LYD"});}}>+ {t.newInvoice}</Btn>}/>
+
+      {/* Delete Confirm Modal */}
+      {delConfirm&&(
+        <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+          <div style={{background:"#0a0f1e",border:"1px solid #7f1d1d44",borderRadius:16,padding:24,maxWidth:360,width:"100%",textAlign:"center"}}>
+            <div style={{fontSize:40,marginBottom:10}}>⚠️</div>
+            <h3 style={{color:"#fbbf24",fontSize:15,marginBottom:8}}>{lang==="ar"?"تأكيد الحذف":"Confirm Delete"}</h3>
+            <p style={{fontSize:12,color:"#9ca3af",marginBottom:6}}>{lang==="ar"?"سيتم حذف الفاتورة واسترجاع المخزون تلقائياً":"Invoice will be deleted and stock restored automatically"}</p>
+            <p style={{fontSize:13,color:"#f87171",marginBottom:16}}>#{delConfirm.id} — {delConfirm.customerName}</p>
+            <Row s={{gap:10,justifyContent:"center"}}>
+              <Btn onClick={()=>delInv(delConfirm)} col="#7f1d1d" s={{flex:1}}>{lang==="ar"?"حذف":"Delete"}</Btn>
+              <OBtn onClick={()=>setDelConfirm(null)} s={{flex:1}}>{t.cancel}</OBtn>
+            </Row>
+          </div>
+        </div>
+      )}
+
+      {/* Edit / Create Form */}
       {showF&&<Card s={{marginBottom:14}}>
-        <h3 style={{fontSize:14,color:"#e2e8f0",marginBottom:12,fontWeight:700}}>📝 {t.newInvoice}</h3>
+        <h3 style={{fontSize:14,color:"#e2e8f0",marginBottom:12,fontWeight:700}}>
+          {editInv?"✏️ "+(lang==="ar"?"تعديل الفاتورة":"Edit Invoice"):"📝 "+t.newInvoice}
+          {editInv&&<span style={{fontSize:11,color:"#6b7280",marginInlineStart:8}}>#{editInv.id}</span>}
+        </h3>
         <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"1fr 1fr",gap:11,marginBottom:12}}>
           <FF label={t.customerName}><Inp value={form.customerName} onChange={e=>setForm(p=>({...p,customerName:e.target.value}))}/></FF>
           <FF label={t.customerPhone}><Inp value={form.customerPhone} onChange={e=>setForm(p=>({...p,customerPhone:e.target.value}))}/></FF>
@@ -1034,8 +1306,12 @@ function InvoicesSection({t,invoices,setInvoices,parts,setParts,user,showToast,l
           ))}
           {form.items.length>0&&<div style={{textAlign:"right",marginTop:10,fontSize:15,fontWeight:700,color:"#10b981"}}>{t.total}: {fmtCur(total,"LYD")}</div>}
         </Card>
-        <Row s={{gap:10}}><Btn onClick={create}>{t.save}</Btn><OBtn onClick={()=>setShowF(false)}>{t.cancel}</OBtn></Row>
+        <Row s={{gap:10}}>
+          <Btn onClick={editInv?saveEdit:create}>{editInv?(lang==="ar"?"حفظ التعديل":"Save Edit"):t.save}</Btn>
+          <OBtn onClick={()=>{setShowF(false);setEditInv(null);}}>{t.cancel}</OBtn>
+        </Row>
       </Card>}
+
       <div className="sx">
         <table style={{minWidth:480,width:"100%",borderCollapse:"collapse"}}>
           <thead><tr style={{background:"#070b14"}}>
@@ -1045,12 +1321,21 @@ function InvoicesSection({t,invoices,setInvoices,parts,setParts,user,showToast,l
             {[...invoices].reverse().map(inv=>(
               <tr key={inv.id} style={{borderTop:"1px solid #1e2d4411"}}>
                 <td style={{padding:"10px 14px",fontSize:12,color:"#3b82f6"}}>#{inv.id}</td>
-                <td style={{padding:"10px 14px",fontSize:13,color:"#e2e8f0"}}>{inv.customerName}</td>
+                <td style={{padding:"10px 14px",fontSize:13,color:"#e2e8f0"}}>
+                  {inv.customerName}
+                  {inv.editedAt&&<div style={{fontSize:10,color:"#f59e0b"}}>✏️ {lang==="ar"?"معدّل":"edited"}</div>}
+                </td>
                 <td style={{padding:"10px 14px",fontSize:12,color:"#6b7280"}}>{inv.customerPhone}</td>
                 <td style={{padding:"10px 14px",fontSize:13,color:"#10b981",fontWeight:600}}>{fmtCur(inv.total,inv.currency)}</td>
                 <td style={{padding:"10px 14px",fontSize:11,color:"#374151",whiteSpace:"nowrap"}}><div>{inv.date}</div><div>{inv.time}</div></td>
                 {isAdmin&&<td style={{padding:"10px 14px",fontSize:12,color:"#8b5cf6",whiteSpace:"nowrap"}}>{lang==="ar"?inv.technicianName:inv.technicianNameEn}</td>}
-                <td style={{padding:"10px 14px"}}><OBtn onClick={()=>setPrintInv(inv)} sm tc="#34d399" col="#065f46">🖨️</OBtn></td>
+                <td style={{padding:"10px 14px"}}>
+                  <Row s={{gap:5}}>
+                    <OBtn onClick={()=>setPrintInv(inv)} sm tc="#34d399" col="#065f46">🖨️</OBtn>
+                    {isAdmin&&<OBtn onClick={()=>startEdit(inv)} sm tc="#60a5fa" col="#1d4ed8">✏️</OBtn>}
+                    {isAdmin&&<OBtn onClick={()=>setDelConfirm(inv)} sm tc="#f87171" col="#7f1d1d">🗑️</OBtn>}
+                  </Row>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -1207,7 +1492,7 @@ function ActivitySection({t,log,setLog,users,lang,mobile}) {
 // ════════════════════════════════════════════════════
 //  USERS + GRANULAR PERMISSIONS
 // ════════════════════════════════════════════════════
-function UsersSection({t,users,setUsers,showToast,lang,mobile,isRtl}) {
+function UsersSection({t,users,setUsers,showToast,lang,mobile,isRtl,pwRequests,setPwRequests}) {
   const [showF,setShowF]=useState(false); const [editPermId,setEditPermId]=useState(null);
   const [showPwModal,setShowPwModal]=useState(false);
   const [pwForm,setPwForm]=useState({uid:"",current:"",newPw:"",confirm:""});
@@ -1252,6 +1537,44 @@ function UsersSection({t,users,setUsers,showToast,lang,mobile,isRtl}) {
           <Btn col="#b45309" onClick={()=>setShowF(!showF)}>+ {t.addUser}</Btn>
         </Row>
       }/>
+
+      {/* Password Reset Requests */}
+      {pwRequests.filter(r=>!r.done).length>0&&(
+        <div style={{marginBottom:16}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+            <div style={{width:8,height:8,borderRadius:"50%",background:"#ef4444",boxShadow:"0 0 8px #ef4444",animation:"pulse 1s infinite"}}/>
+            <span style={{fontSize:13,fontWeight:700,color:"#f87171"}}>
+              🔔 {lang==="ar"?"طلبات تغيير كلمة المرور":"Password Reset Requests"} ({pwRequests.filter(r=>!r.done).length})
+            </span>
+          </div>
+          {pwRequests.filter(r=>!r.done).map(req=>(
+            <div key={req.id} style={{background:"#1c1010",border:"1px solid #7f1d1d44",borderRadius:12,padding:14,marginBottom:8,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}>
+              <div>
+                <div style={{fontSize:13,fontWeight:700,color:"#fbbf24"}}>
+                  🔧 {lang==="ar"?req.userName:req.userNameEn}
+                  <span style={{fontSize:11,color:"#6b7280",marginInlineStart:8}}>@{req.username}</span>
+                </div>
+                <div style={{fontSize:11,color:"#6b7280",marginTop:3}}>📅 {req.date} {req.time}</div>
+                <div style={{fontSize:11,color:"#f87171",marginTop:2}}>
+                  {lang==="ar"?"طلب إعادة تعيين كلمة المرور":"Requested password reset"}
+                </div>
+              </div>
+              <Row s={{gap:8}}>
+                <button onClick={()=>{
+                  const u=users.find(x=>x.id===req.userId);
+                  if(u){setShowPwModal(true);setPwForm({uid:String(u.id),current:u.password,newPw:"",confirm:""});}
+                  setPwRequests(p=>p.map(r=>r.id===req.id?{...r,done:true}:r));
+                }} style={{padding:"7px 14px",borderRadius:8,border:"none",background:"#065f46",color:"#34d399",fontSize:12,cursor:"pointer",fontWeight:600}}>
+                  🔑 {lang==="ar"?"تغيير كلمة المرور":"Reset Password"}
+                </button>
+                <button onClick={()=>setPwRequests(p=>p.map(r=>r.id===req.id?{...r,done:true}:r))} style={{padding:"7px 12px",borderRadius:8,border:"1px solid #374151",background:"transparent",color:"#6b7280",fontSize:12,cursor:"pointer"}}>
+                  ✕
+                </button>
+              </Row>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Change Password Modal */}
       {showPwModal&&(

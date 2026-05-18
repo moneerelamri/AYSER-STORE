@@ -1,0 +1,28 @@
+{
+    "name": "متجر ayser - نظام الصيانة",
+    "short_name": "ayser Store",
+    "description": "نظام إدارة الصيانة لمتجر ayser",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#070b14",
+    "theme_color": "#2563eb",
+    "orientation": "any",
+    "icons": [
+      {
+        "src": "https://api.dicebear.com/7.x/shapes/svg?seed=ayser&backgroundColor=2563eb",
+        "sizes": "192x192",
+        "type": "image/svg+xml",
+        "purpose": "any maskable"
+      },
+      {
+        "src": "https://api.dicebear.com/7.x/shapes/svg?seed=ayser&backgroundColor=2563eb",
+        "sizes": "512x512",
+        "type": "image/svg+xml",
+        "purpose": "any maskable"
+      }
+    ],
+    "categories": ["business", "productivity"],
+    "lang": "ar",
+    "dir": "rtl"
+  }
+  
