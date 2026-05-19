@@ -150,10 +150,11 @@ const SI = {waiting:"⏳",in_progress:"🔧",ready:"✅"};
 const GS = () => (
   <style>{`
     *{box-sizing:border-box;margin:0;padding:0;}
-    body{background:#070b14;}
-    ::-webkit-scrollbar{width:4px;height:4px;}
-    ::-webkit-scrollbar-track{background:#0a0f1e;}
-    ::-webkit-scrollbar-thumb{background:#1e2d44;border-radius:3px;}
+    body{background:#0f1117;}
+    ::-webkit-scrollbar{width:5px;height:5px;}
+    ::-webkit-scrollbar-track{background:#161b27;}
+    ::-webkit-scrollbar-thumb{background:#2a3548;border-radius:4px;}
+    ::-webkit-scrollbar-thumb:hover{background:#3a4a62;}
     input,select,button,textarea{font-family:inherit;}
     .sx{overflow-x:auto;-webkit-overflow-scrolling:touch;}
     @media print{
@@ -163,31 +164,62 @@ const GS = () => (
       .main-content{margin:0!important;padding:0!important;}
       body{background:white!important;color:black!important;}
     }
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    .card-ani{animation:fadeIn .2s ease}
   `}</style>
 );
-const inp = {width:"100%",padding:"10px 13px",borderRadius:9,border:"1px solid #1e2d44",background:"#070b14",color:"#e2e8f0",fontSize:13,outline:"none"};
+const inp = {width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#cbd5e1",fontSize:13,outline:"none",transition:"border .15s"};
 const Inp = ({value,onChange,placeholder,type="text",s={}}) =>
   <input value={value} onChange={onChange} placeholder={placeholder} type={type} style={{...inp,...s}}/>;
 const Sel = ({value,onChange,children,s={}}) =>
   <select value={value} onChange={onChange} style={{...inp,...s}}>{children}</select>;
-const Lbl = ({c}) => <label style={{display:"block",fontSize:11,color:"#6b7280",marginBottom:4}}>{c}</label>;
+const Lbl = ({c}) => <label style={{display:"block",fontSize:11,color:"#64748b",marginBottom:5,fontWeight:500,letterSpacing:.3}}>{c}</label>;
 const FF = ({label,children}) => <div><Lbl c={label}/>{children}</div>;
 const Btn = ({onClick,children,col="#2563eb",s={},sm,full}) =>
-  <button onClick={onClick} style={{padding:sm?"7px 13px":"10px 20px",borderRadius:9,border:"none",background:col,color:"#fff",fontSize:sm?12:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",width:full?"100%":"auto",...s}}>{children}</button>;
-const OBtn = ({onClick,children,col="#1e2d44",tc="#9ca3af",s={},sm}) =>
-  <button onClick={onClick} style={{padding:sm?"7px 13px":"10px 16px",borderRadius:9,border:`1px solid ${col}`,background:"transparent",color:tc,fontSize:sm?12:13,cursor:"pointer",whiteSpace:"nowrap",...s}}>{children}</button>;
+  <button onClick={onClick} style={{padding:sm?"7px 13px":"10px 20px",borderRadius:10,border:"none",background:`linear-gradient(135deg,${col},${col}cc)`,color:"#fff",fontSize:sm?12:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",width:full?"100%":"auto",boxShadow:`0 2px 8px ${col}55`,...s}}>{children}</button>;
+const OBtn = ({onClick,children,col="#2a3a52",tc="#94a3b8",s={},sm}) =>
+  <button onClick={onClick} style={{padding:sm?"7px 13px":"10px 16px",borderRadius:10,border:`1px solid ${col}`,background:"transparent",color:tc,fontSize:sm?12:13,cursor:"pointer",whiteSpace:"nowrap",...s}}>{children}</button>;
 const Card = ({children,s={}}) =>
-  <div style={{background:"#0d1321",border:"1px solid #1e2d44",borderRadius:14,padding:16,...s}}>{children}</div>;
+  <div className="card-ani" style={{background:"#151e2d",border:"1px solid #1e2e44",borderRadius:16,padding:18,...s}}>{children}</div>;
 const Row = ({children,s={}}) =>
   <div style={{display:"flex",alignItems:"center",...s}}>{children}</div>;
 const PH = ({title,action}) =>
-  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18,flexWrap:"wrap",gap:10}}>
-    <h2 style={{fontSize:18,fontWeight:700,color:"#fff",margin:0}}>{title}</h2>{action}
+  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:10}}>
+    <h2 style={{fontSize:19,fontWeight:700,color:"#e2e8f0",margin:0}}>{title}</h2>{action}
   </div>;
+// Password field with show/hide toggle (proper component - no hooks in map)
+function PwField({value,onChange,placeholder="••••••••"}) {
+  const [show,setShow]=useState(false);
+  return (
+    <div style={{position:"relative"}}>
+      <input value={value} onChange={onChange} type={show?"text":"password"} placeholder={placeholder} style={{...inp,paddingInlineEnd:44}}/>
+      <button onClick={()=>setShow(p=>!p)} style={{position:"absolute",insetInlineEnd:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",fontSize:16,color:"#6b7280",padding:0}}>
+        {show?"🙈":"👁️"}
+      </button>
+    </div>
+  );
+}
+
 const Badge = ({children,col}) =>
   <span style={{padding:"3px 10px",borderRadius:20,fontSize:11,fontWeight:600,background:`${col}22`,color:col,whiteSpace:"nowrap"}}>{children}</span>;
 const NoAccess = ({t}) =>
   <div style={{textAlign:"center",padding:60,color:"#4b5563"}}><div style={{fontSize:40,marginBottom:12}}>🚫</div><div>{t.noPermission}</div></div>;
+
+// Password reveal component
+function PasswordReveal({password,lang}) {
+  const [show,setShow]=useState(false);
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10,background:"#070b14",borderRadius:8,padding:"6px 10px"}}>
+      <span style={{fontSize:11,color:"#6b7280",flexShrink:0}}>{lang==="ar"?"كلمة المرور:":"Password:"}</span>
+      <span style={{fontSize:12,color:show?"#fbbf24":"#374151",fontFamily:"monospace",flex:1,letterSpacing:show?1:2}}>
+        {show?password:"••••••••"}
+      </span>
+      <button onClick={()=>setShow(p=>!p)} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,color:"#6b7280",padding:0,flexShrink:0}}>
+        {show?"🙈":"👁️"}
+      </button>
+    </div>
+  );
+}
 const Checkbox = ({checked,onChange,label,col="#2563eb"}) => (
   <div onClick={onChange} style={{display:"flex",alignItems:"center",gap:9,padding:"9px 12px",background:"#070b14",borderRadius:9,cursor:"pointer",border:`1px solid ${checked?col+"44":"#1e2d44"}`,transition:"all .15s",userSelect:"none"}}>
     <div style={{width:18,height:18,borderRadius:5,border:`2px solid ${checked?col:"#374151"}`,background:checked?col:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:11,color:"#fff",fontWeight:700,transition:"all .2s"}}>{checked?"✓":""}</div>
@@ -198,28 +230,112 @@ const Checkbox = ({checked,onChange,label,col="#2563eb"}) => (
 // ════════════════════════════════════════════════════
 //  APP ROOT
 // ════════════════════════════════════════════════════
+
+// localStorage helpers
+const LS = {
+  get: (key, fallback) => {
+    try {
+      const v = localStorage.getItem("ayser_" + key);
+      return v ? JSON.parse(v) : fallback;
+    } catch { return fallback; }
+  },
+  set: (key, val) => {
+    try { localStorage.setItem("ayser_" + key, JSON.stringify(val)); } catch {}
+  }
+};
+
 export default function App() {
-  const [lang,setLang] = useState("ar");
+  const [lang,setLang] = useState(()=>LS.get("lang","ar"));
   const [user,setUser] = useState(null);
   const [tab,setTab] = useState("dashboard");
   const [sideOpen,setSideOpen] = useState(false);
-  const [users,setUsers] = useState(INIT_USERS);
-  const [parts,setParts] = useState(INIT_PARTS);
-  const [tools,setTools] = useState(INIT_TOOLS);
-  const [invoices,setInvoices] = useState(INIT_INVOICES);
-  const [devices,setDevices] = useState(INIT_DEVICES);
-  const [log,setLog] = useState([]);
+  const [users,setUsers] = useState(()=>LS.get("users",INIT_USERS));
+  const [parts,setParts] = useState(()=>LS.get("parts",INIT_PARTS));
+  const [tools,setTools] = useState(()=>LS.get("tools",INIT_TOOLS));
+  const [invoices,setInvoices] = useState(()=>LS.get("invoices",INIT_INVOICES));
+  const [devices,setDevices] = useState(()=>LS.get("devices",INIT_DEVICES));
+  const [log,setLog] = useState(()=>LS.get("log",[]));
   const [toast,setToast] = useState(null);
   const [clock,setClock] = useState(new Date());
   const [lastBk,setLastBk] = useState(null);
   const [mobile,setMobile] = useState(window.innerWidth<768);
-  const [storeInfo,setStoreInfo] = useState({phone:"",phone2:"",address:"",addressEn:"",maps:""});
-  const [logo,setLogo] = useState("");
-  const [pwRequests,setPwRequests] = useState([]);
+  const [storeInfo,setStoreInfo] = useState(()=>LS.get("storeInfo",{phone:"",phone2:"",address:"",addressEn:"",maps:"",siteUrl:""}));
+  const [logo,setLogo] = useState(()=>LS.get("logo",""));
+  const [pwRequests,setPwRequests] = useState(()=>LS.get("pwRequests",[]));
+  const [salaryRecords,setSalaryRecords] = useState(()=>LS.get("salaryRecords",[]));
+  const [logoutModal,setLogoutModal] = useState(false);
 
   const t = T[lang]; const isRtl = lang==="ar";
   const isAdmin = user?.role==="admin";
   const can = (p) => isAdmin||!!user?.permissions?.[p];
+
+  // ── Data repair function ──────────────────────────
+  const repairData = () => {
+    const issues = [];
+    // Fix users missing fields
+    const fixedUsers = users.map(u => {
+      const f = {...u};
+      if(!f.permissions) { f.permissions = f.role==="admin"?{...ADMIN_PERMS}:{...DEFAULT_PERMS}; issues.push(lang==="ar"?`إصلاح صلاحيات: ${f.name}`:`Fixed permissions: ${f.nameEn}`); }
+      if(f.active===undefined) { f.active = true; }
+      if(!f.salary) { f.salary = ""; f.salaryType = "fixed"; }
+      return f;
+    });
+    // Fix parts missing barcodes
+    const existingCodes = parts.map(p=>p.barcode).filter(Boolean);
+    const fixedParts = parts.map(p => {
+      if(!p.barcode) {
+        const bc = genBarcode(existingCodes);
+        existingCodes.push(bc);
+        issues.push(lang==="ar"?`إضافة باركود: ${p.name}`:`Added barcode: ${p.nameEn}`);
+        return {...p, barcode: bc};
+      }
+      return p;
+    });
+    // Fix devices missing fields
+    const fixedDevices = devices.map(d => ({
+      status: "waiting", notes: "", faultTypeEn: "", maintenanceTypeEn: "", ...d
+    }));
+    // Fix invoices missing fields
+    const fixedInvoices = invoices.map(i => ({
+      currency: "LYD", items: [], ...i,
+      total: Number(i.total)||0
+    }));
+    setUsers(fixedUsers);
+    setParts(fixedParts);
+    setDevices(fixedDevices);
+    setInvoices(fixedInvoices);
+    return issues;
+  };
+
+  // ── Backup on logout ─────────────────────────────
+  const buildBackup = () => ({
+    version:"2.0", app:"ayser Store",
+    savedAt: new Date().toISOString(),
+    savedBy: lang==="ar"?user?.name:user?.nameEn,
+    data: {users,parts,tools,invoices,devices}
+  });
+  const downloadBackup = () => {
+    const b = buildBackup();
+    const bl = new Blob([JSON.stringify(b,null,2)],{type:"application/json"});
+    const url = URL.createObjectURL(bl);
+    const a = document.createElement("a");
+    a.href=url; a.download=`ayser-backup-${today()}.json`; a.click();
+    URL.revokeObjectURL(url);
+  };
+  const doLogout = () => { setUser(null); setSideOpen(false); setLogoutModal(false); };
+
+  // Save everything to localStorage whenever it changes
+  useEffect(()=>LS.set("users",users),[users]);
+  useEffect(()=>LS.set("parts",parts),[parts]);
+  useEffect(()=>LS.set("tools",tools),[tools]);
+  useEffect(()=>LS.set("invoices",invoices),[invoices]);
+  useEffect(()=>LS.set("devices",devices),[devices]);
+  useEffect(()=>LS.set("log",log),[log]);
+  useEffect(()=>LS.set("storeInfo",storeInfo),[storeInfo]);
+  useEffect(()=>LS.set("logo",logo),[logo]);
+  useEffect(()=>LS.set("pwRequests",pwRequests),[pwRequests]);
+  useEffect(()=>LS.set("salaryRecords",salaryRecords),[salaryRecords]);
+  useEffect(()=>LS.set("lang",lang),[lang]);
 
   useEffect(()=>{const i=setInterval(()=>setClock(new Date()),1000);return()=>clearInterval(i);},[]);
   useEffect(()=>{
@@ -227,6 +343,7 @@ export default function App() {
     window.addEventListener("resize",h); return()=>window.removeEventListener("resize",h);
   },[]);
   useEffect(()=>{
+    // Auto backup to sessionStorage (for backup section)
     try{sessionStorage.setItem("ayser_bk",JSON.stringify({users,parts,tools,invoices,devices,ts:new Date().toISOString()}));setLastBk(new Date().toISOString());}catch(e){}
   },[users,parts,tools,invoices,devices]);
 
@@ -242,10 +359,16 @@ export default function App() {
     const urlParams = new URLSearchParams(window.location.search);
     const trackId = urlParams.get("track");
     if(trackId) {
-      const dev = devices.find(d=>String(d.id)===trackId);
+      // Read devices from localStorage too (for when user is not logged in)
+      let allDevices = devices;
+      try {
+        const stored = localStorage.getItem("ayser_devices");
+        if(stored) allDevices = JSON.parse(stored);
+      } catch(e) {}
+      const dev = allDevices.find(d=>String(d.id)===trackId);
       return <TrackingPage dev={dev} trackId={trackId} lang={lang} setLang={setLang} isRtl={isRtl}/>;
     }
-    return <Login t={t} lang={lang} setLang={setLang} users={users} onLogin={u=>{setUser(u);setTab("dashboard");}} isRtl={isRtl} logo={logo} pwRequests={pwRequests} setPwRequests={setPwRequests}/>;
+    return <Login t={t} lang={lang} setLang={setLang} users={users} onLogin={u=>{setUser(u);setTab("dashboard");}} isRtl={isRtl} logo={logo} pwRequests={pwRequests} setPwRequests={setPwRequests} devices={devices}/>;
   }
 
   const NAV=[
@@ -255,6 +378,7 @@ export default function App() {
     {id:"software",icon:"💾",label:t.software,ok:can("software_view")},
     {id:"invoices",icon:"🧾",label:t.invoices,ok:can("invoices_view")},
     {id:"reports",icon:"📈",label:t.reports,ok:can("reports_view")},
+    {id:"salaries",icon:"💰",label:lang==="ar"?"المرتبات":"Salaries",ok:isAdmin},
     {id:"activity",icon:"🕵️",label:t.activityLog,ok:isAdmin},
     {id:"users",icon:"👥",label:t.users,ok:isAdmin,badge:pwRequests.filter(r=>!r.done).length},
     {id:"store",icon:"🏪",label:lang==="ar"?"إعدادات المتجر":"Store Settings",ok:isAdmin},
@@ -264,7 +388,7 @@ export default function App() {
   const go=(id)=>{setTab(id);setSideOpen(false);};
 
   const SidebarEl = () => (
-    <aside className="sidebar-el" style={{position:"fixed",[isRtl?"right":"left"]:0,top:0,bottom:0,width:215,background:"#0a0f1e",borderInlineEnd:"1px solid #1e2d44",display:"flex",flexDirection:"column",zIndex:200,transform:mobile?(sideOpen?"translateX(0)":(isRtl?"translateX(110%)":"translateX(-110%)")):"translateX(0)",transition:"transform .25s ease",boxShadow:mobile&&sideOpen?"0 0 40px #000a":"none"}}>
+    <aside className="sidebar-el" style={{position:"fixed",[isRtl?"right":"left"]:0,top:0,bottom:0,width:215,background:"#0d1421",borderInlineEnd:"1px solid #1e2e44",display:"flex",flexDirection:"column",zIndex:200,transform:mobile?(sideOpen?"translateX(0)":(isRtl?"translateX(110%)":"translateX(-110%)")):"translateX(0)",transition:"transform .25s ease",boxShadow:mobile&&sideOpen?"0 0 60px #000c":"none"}}>
       {/* Logo & Clock */}
       <div style={{padding:"12px 10px 10px",borderBottom:"1px solid #1e2d44"}}>
         <Row s={{gap:9,marginBottom:9}}>
@@ -285,9 +409,9 @@ export default function App() {
         </div>
       </div>
       {/* Nav */}
-      <nav style={{flex:1,padding:"8px 6px",overflowY:"auto"}}>
+      <nav style={{flex:1,padding:"8px 6px",overflowY:"auto",overflowX:"hidden",scrollbarWidth:"thin",scrollbarColor:"#1e2d44 transparent"}}>
         {NAV.map(n=>(
-          <button key={n.id} onClick={()=>go(n.id)} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"10px 11px",borderRadius:9,border:"none",cursor:"pointer",marginBottom:2,background:tab===n.id?"#1e3a5f":"transparent",color:tab===n.id?"#60a5fa":"#6b7280",fontSize:13,fontWeight:tab===n.id?600:400,textAlign:isRtl?"right":"left",transition:"all .15s",borderInlineStart:tab===n.id?"3px solid #3b82f6":"3px solid transparent"}}>
+          <button key={n.id} onClick={()=>go(n.id)} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"10px 11px",borderRadius:10,border:"none",cursor:"pointer",marginBottom:3,background:tab===n.id?"#1a3055":"transparent",color:tab===n.id?"#60a5fa":"#64748b",fontSize:13,fontWeight:tab===n.id?600:400,textAlign:isRtl?"right":"left",transition:"all .15s",borderInlineStart:tab===n.id?"3px solid #3b82f6":"3px solid transparent"}}>
             <span style={{fontSize:16}}>{n.icon}</span>
             <span style={{flex:1}}>{n.label}</span>
             {n.badge>0&&<span style={{background:"#ef4444",color:"#fff",fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:10,minWidth:18,textAlign:"center"}}>{n.badge}</span>}
@@ -307,44 +431,48 @@ export default function App() {
             </button>
           ))}
         </Row>
-        <button onClick={()=>{setUser(null);setSideOpen(false);}} style={{width:"100%",padding:"7px",borderRadius:7,border:"1px solid #3f1919",background:"#1c1010",color:"#f87171",fontSize:12,cursor:"pointer"}}>
+        <button onClick={()=>setLogoutModal(true)} style={{width:"100%",padding:"7px",borderRadius:7,border:"1px solid #3f1919",background:"#1c1010",color:"#f87171",fontSize:12,cursor:"pointer"}}>
           🚪 {t.logout}
         </button>
       </div>
     </aside>
   );
 
+  // ── Logout Modal ─────────────────────────────────
   const ml = isRtl?"marginRight":"marginLeft";
   return (
-    <div dir={isRtl?"rtl":"ltr"} style={{fontFamily:isRtl?"'Tajawal',sans-serif":"'Outfit',sans-serif",minHeight:"100vh",background:"#070b14",color:"#e2e8f0"}}>
+    <div dir={isRtl?"rtl":"ltr"} style={{fontFamily:isRtl?"'Tajawal',sans-serif":"'Outfit',sans-serif",minHeight:"100vh",background:"#0f1117",color:"#e2e8f0"}}>
+      <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet"/>
       <GS/>
-      <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-      {/* Overlay */}
       {mobile&&sideOpen&&<div onClick={()=>setSideOpen(false)} style={{position:"fixed",inset:0,background:"#00000088",zIndex:199}}/>}
       <SidebarEl/>
-      {/* Mobile topbar */}
+      {logoutModal&&<LogoutModal
+        lang={lang} isRtl={isRtl} user={user}
+        users={users} parts={parts} tools={tools} invoices={invoices} devices={devices}
+        setUsers={setUsers} setParts={setParts} setDevices={setDevices} setInvoices={setInvoices}
+        onClose={()=>setLogoutModal(false)}
+        onLogout={doLogout}
+        buildBackup={buildBackup}
+      />}
       {mobile&&(
         <div className="topbar-el" style={{position:"fixed",top:0,left:0,right:0,height:50,background:"#0a0f1e",borderBottom:"1px solid #1e2d44",display:"flex",alignItems:"center",padding:"0 14px",zIndex:150,gap:12}}>
           <button onClick={()=>setSideOpen(true)} style={{background:"none",border:"none",color:"#9ca3af",fontSize:22,cursor:"pointer"}}>☰</button>
           <span style={{fontSize:14,fontWeight:800,color:"#fff"}}>{t.appTitle}</span>
-          <div style={{marginInlineStart:"auto",display:"flex",alignItems:"center",gap:8}}>
-            <span style={{fontSize:12,fontFamily:"monospace",color:"#3b82f6"}}>{clock.toTimeString().slice(0,8)}</span>
-          </div>
+          <div style={{marginInlineStart:"auto"}}><span style={{fontSize:12,fontFamily:"monospace",color:"#3b82f6"}}>{clock.toTimeString().slice(0,8)}</span></div>
         </div>
       )}
-      {/* Toast */}
       {toast&&<div style={{position:"fixed",top:mobile?56:16,left:"50%",transform:"translateX(-50%)",background:toast.type==="success"?"#065f46":"#7f1d1d",color:"#fff",padding:"10px 24px",borderRadius:10,zIndex:9999,fontSize:13,fontWeight:500,boxShadow:"0 8px 32px #0006",whiteSpace:"nowrap"}}>{toast.msg}</div>}
-      {/* Main */}
       <main className="main-content" style={{[ml]:mobile?0:215,paddingTop:mobile?52:0,minHeight:"100vh"}}>
         <div style={{padding:mobile?"12px 10px":"22px",maxWidth:1300,margin:"0 auto"}}>
           {tab==="dashboard"&&<Dashboard t={t} parts={parts} tools={tools} invoices={invoices} devices={devices} isAdmin={isAdmin} lang={lang} mobile={mobile}/>}
           {tab==="devices"&&<DevicesSection t={t} devices={devices} setDevices={setDevices} users={users} user={user} showToast={showToast} logA={logA} lang={lang} isAdmin={isAdmin} can={can} mobile={mobile} storeInfo={storeInfo} logo={logo}/>}
           {tab==="hardware"&&<HardwareSection t={t} parts={parts} setParts={setParts} isAdmin={isAdmin} showToast={showToast} user={user} lang={lang} logA={logA} can={can} mobile={mobile}/>}
           {tab==="software"&&<SoftwareSection t={t} tools={tools} setTools={setTools} isAdmin={isAdmin} showToast={showToast} user={user} lang={lang} logA={logA} can={can} mobile={mobile}/>}
-          {tab==="invoices"&&<InvoicesSection t={t} invoices={invoices} setInvoices={setInvoices} parts={parts} setParts={setParts} user={user} showToast={showToast} lang={lang} isAdmin={isAdmin} logA={logA} can={can} mobile={mobile} storeInfo={storeInfo}/>}
+          {tab==="invoices"&&<InvoicesSection t={t} invoices={invoices} setInvoices={setInvoices} parts={parts} setParts={setParts} user={user} showToast={showToast} lang={lang} isAdmin={isAdmin} logA={logA} can={can} mobile={mobile} storeInfo={storeInfo} logo={logo}/>}
           {tab==="reports"&&<ReportsSection t={t} invoices={invoices} parts={parts} isAdmin={isAdmin} lang={lang} mobile={mobile} can={can}/>}
+          {tab==="salaries"&&isAdmin&&<SalariesSection lang={lang} users={users} invoices={invoices} salaryRecords={salaryRecords} setSalaryRecords={setSalaryRecords} mobile={mobile} showToast={showToast}/>}
           {tab==="activity"&&isAdmin&&<ActivitySection t={t} log={log} setLog={setLog} users={users} lang={lang} mobile={mobile}/>}
-          {tab==="users"&&isAdmin&&<UsersSection t={t} users={users} setUsers={setUsers} showToast={showToast} lang={lang} mobile={mobile} isRtl={isRtl} pwRequests={pwRequests} setPwRequests={setPwRequests}/>}
+          {tab==="users"&&isAdmin&&<UsersSection t={t} users={users} setUsers={setUsers} showToast={showToast} lang={lang} mobile={mobile} isRtl={isRtl} pwRequests={pwRequests} setPwRequests={setPwRequests} invoices={invoices} devices={devices}/>}
           {tab==="store"&&isAdmin&&<StoreSettings lang={lang} storeInfo={storeInfo} setStoreInfo={setStoreInfo} showToast={showToast} mobile={mobile} logo={logo} setLogo={setLogo}/>}
           {tab==="backup"&&isAdmin&&<BackupSection t={t} users={users} parts={parts} tools={tools} invoices={invoices} devices={devices} setUsers={setUsers} setParts={setParts} setTools={setTools} setInvoices={setInvoices} setDevices={setDevices} showToast={showToast} lang={lang} lastBk={lastBk} user={user} mobile={mobile}/>}
         </div>
@@ -354,12 +482,119 @@ export default function App() {
 }
 
 // ════════════════════════════════════════════════════
+//  LOGOUT MODAL (external component)
+// ════════════════════════════════════════════════════
+function LogoutModal({lang,isRtl,user,users,parts,tools,invoices,devices,setUsers,setParts,setDevices,setInvoices,onClose,onLogout,buildBackup}) {
+  const [repairDone,setRepairDone]=useState(false);
+  const [repairIssues,setRepairIssues]=useState([]);
+  const [backupDone,setBackupDone]=useState(false);
+
+  const handleRepair=()=>{
+    const issues=[];
+    // Fix users
+    const fixedUsers=users.map(u=>{
+      const f={...u};
+      if(!f.permissions){f.permissions=f.role==="admin"?{...ADMIN_PERMS}:{...DEFAULT_PERMS};issues.push(lang==="ar"?`إصلاح صلاحيات: ${f.name}`:`Fixed perms: ${f.nameEn}`);}
+      if(f.active===undefined)f.active=true;
+      if(!f.salary){f.salary="";f.salaryType="fixed";}
+      return f;
+    });
+    // Fix parts barcodes
+    const existingCodes=parts.map(p=>p.barcode).filter(Boolean);
+    const fixedParts=parts.map(p=>{
+      if(!p.barcode){const bc=genBarcode(existingCodes);existingCodes.push(bc);issues.push(lang==="ar"?`باركود: ${p.name}`:`Barcode: ${p.nameEn}`);return{...p,barcode:bc};}
+      return p;
+    });
+    const fixedDevices=devices.map(d=>({status:"waiting",notes:"",faultTypeEn:"",maintenanceTypeEn:"",...d}));
+    const fixedInvoices=invoices.map(i=>({currency:"LYD",items:[],...i,total:Number(i.total)||0}));
+    setUsers(fixedUsers);setParts(fixedParts);setDevices(fixedDevices);setInvoices(fixedInvoices);
+    setRepairIssues(issues);setRepairDone(true);
+  };
+
+  const handleBackup=()=>{
+    const b=buildBackup();
+    const bl=new Blob([JSON.stringify(b,null,2)],{type:"application/json"});
+    const url=URL.createObjectURL(bl);
+    const a=document.createElement("a");
+    a.href=url;a.download=`ayser-backup-${today()}.json`;a.click();
+    URL.revokeObjectURL(url);
+    setBackupDone(true);
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"#000000ee",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} dir={isRtl?"rtl":"ltr"}>
+      <div style={{background:"#0a0f1e",border:"1px solid #1e2d44",borderRadius:20,padding:28,width:"100%",maxWidth:440,fontFamily:isRtl?"'Tajawal',sans-serif":"'Outfit',sans-serif"}}>
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <div style={{fontSize:44,marginBottom:8}}>👋</div>
+          <h3 style={{color:"#fff",fontSize:18,fontWeight:700,margin:0}}>{lang==="ar"?"هل تريد تسجيل الخروج؟":"Ready to sign out?"}</h3>
+          <div style={{fontSize:12,color:"#6b7280",marginTop:6}}>{lang==="ar"?`مرحباً ${user?.name}`:`Hello, ${user?.nameEn}`}</div>
+        </div>
+        {/* Repair */}
+        <div style={{background:"#070b14",border:`1px solid ${repairDone?"#10b98144":"#1e2d44"}`,borderRadius:14,padding:14,marginBottom:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+            <span style={{fontSize:22}}>🔧</span>
+            <div>
+              <div style={{fontSize:13,fontWeight:700,color:"#e2e8f0"}}>{lang==="ar"?"تصليح المنظومة":"Repair System"}</div>
+              <div style={{fontSize:11,color:"#6b7280"}}>{lang==="ar"?"فحص وإصلاح أي أخطاء في البيانات":"Check and fix any data errors"}</div>
+            </div>
+          </div>
+          {!repairDone?(
+            <button onClick={handleRepair} style={{width:"100%",padding:"9px",borderRadius:9,border:"none",background:"linear-gradient(90deg,#1d4ed8,#2563eb)",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+              🔍 {lang==="ar"?"فحص وتصليح":"Check & Repair"}
+            </button>
+          ):(
+            <div>
+              <div style={{color:"#34d399",fontSize:13,fontWeight:600,marginBottom:6}}>✅ {lang==="ar"?"تم الفحص":"Check complete"}</div>
+              {repairIssues.length===0
+                ?<div style={{fontSize:12,color:"#6b7280"}}>{lang==="ar"?"✓ البيانات سليمة":"✓ No issues found"}</div>
+                :<div style={{maxHeight:80,overflowY:"auto"}}>{repairIssues.map((iss,i)=><div key={i} style={{fontSize:11,color:"#fbbf24",marginBottom:2}}>• {iss}</div>)}</div>
+              }
+            </div>
+          )}
+        </div>
+        {/* Backup */}
+        <div style={{background:"#070b14",border:`1px solid ${backupDone?"#10b98144":"#1e2d44"}`,borderRadius:14,padding:14,marginBottom:20}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+            <span style={{fontSize:22}}>💾</span>
+            <div>
+              <div style={{fontSize:13,fontWeight:700,color:"#e2e8f0"}}>{lang==="ar"?"نسخة احتياطية":"Backup Data"}</div>
+              <div style={{fontSize:11,color:"#6b7280"}}>{lang==="ar"?`${users.length} مستخدم · ${invoices.length} فاتورة · ${devices.length} جهاز`:`${users.length} users · ${invoices.length} invoices · ${devices.length} devices`}</div>
+            </div>
+          </div>
+          {!backupDone
+            ?<button onClick={handleBackup} style={{width:"100%",padding:"9px",borderRadius:9,border:"none",background:"linear-gradient(90deg,#065f46,#10b981)",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>⬇️ {lang==="ar"?"تحميل نسخة احتياطية":"Download Backup"}</button>
+            :<div style={{color:"#34d399",fontSize:13,fontWeight:600}}>✅ {lang==="ar"?"تم تحميل النسخة":"Backup downloaded"}</div>
+          }
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          <button onClick={onLogout} style={{padding:"11px",borderRadius:11,border:"1px solid #7f1d1d44",background:"#7f1d1d22",color:"#f87171",fontSize:14,fontWeight:700,cursor:"pointer"}}>🚪 {lang==="ar"?"خروج":"Sign Out"}</button>
+          <button onClick={onClose} style={{padding:"11px",borderRadius:11,border:"1px solid #1e2d44",background:"#111827",color:"#9ca3af",fontSize:14,fontWeight:600,cursor:"pointer"}}>← {lang==="ar"?"رجوع":"Back"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════
 //  LOGIN
 // ════════════════════════════════════════════════════
-function Login({t,lang,setLang,users,onLogin,isRtl,logo,pwRequests,setPwRequests}) {
+function Login({t,lang,setLang,users,onLogin,isRtl,logo,pwRequests,setPwRequests,devices=[]}) {
   const [un,setUn]=useState(""); const [pw,setPw]=useState(""); const [err,setErr]=useState("");
+  const [showPw,setShowPw]=useState(false);
   const [showForgot,setShowForgot]=useState(false);
+  const [showTrack,setShowTrack]=useState(false);
+  const [trackId,setTrackId]=useState("");
+  const [trackResult,setTrackResult]=useState(null);
   const [forgotUn,setForgotUn]=useState(""); const [forgotSent,setForgotSent]=useState(false);
+
+  const doTrack=()=>{
+    if(!trackId.trim())return;
+    // Read from localStorage first
+    let allDevices=devices;
+    try{const s=localStorage.getItem("ayser_devices");if(s)allDevices=JSON.parse(s);}catch(e){}
+    const found=allDevices.find(d=>String(d.id)===trackId.trim());
+    setTrackResult(found||"notfound");
+  };
 
   const go=()=>{
     const u=users.find(x=>x.username===un&&x.password===pw);
@@ -399,7 +634,18 @@ function Login({t,lang,setLang,users,onLogin,isRtl,logo,pwRequests,setPwRequests
               </button>)}
             </Row>
             <div style={{marginBottom:14}}><FF label={t.username}><Inp value={un} onChange={e=>setUn(e.target.value)} placeholder={t.username}/></FF></div>
-            <div style={{marginBottom:8}}><FF label={t.password}><Inp type="password" value={pw} onChange={e=>setPw(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&go()}/></FF></div>
+            <div style={{marginBottom:8}}>
+              <FF label={t.password}>
+                <div style={{position:"relative"}}>
+                  <input value={pw} onChange={e=>setPw(e.target.value)} type={showPw?"text":"password"} placeholder="••••••••"
+                    onKeyDown={e=>e.key==="Enter"&&go()}
+                    style={{...inp,paddingInlineEnd:44}}/>
+                  <button onClick={()=>setShowPw(p=>!p)} style={{position:"absolute",insetInlineEnd:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",fontSize:16,color:"#6b7280",padding:0}}>
+                    {showPw?"🙈":"👁️"}
+                  </button>
+                </div>
+              </FF>
+            </div>
             {/* Forgot password link */}
             <div style={{textAlign:isRtl?"left":"right",marginBottom:16}}>
               <button onClick={()=>{setShowForgot(true);setErr("");setForgotSent(false);setForgotUn("");}} style={{background:"none",border:"none",color:"#60a5fa",fontSize:12,cursor:"pointer",textDecoration:"underline"}}>
@@ -682,7 +928,11 @@ function DevicesSection({t,devices,setDevices,users,user,showToast,logA,lang,isA
 function StoreSettings({lang,storeInfo,setStoreInfo,showToast,mobile,logo,setLogo}) {
   const [form,setForm]=useState({...storeInfo});
   const f=(k,v)=>setForm(p=>({...p,[k]:v}));
-  const save=()=>{setStoreInfo({...form});showToast(lang==="ar"?"تم حفظ معلومات المتجر":"Store info saved");};
+  const save=()=>{
+    setStoreInfo({...form});
+    if(form.siteUrl) try{localStorage.setItem("ayser_siteUrl",form.siteUrl);}catch(e){}
+    showToast(lang==="ar"?"تم حفظ معلومات المتجر":"Store info saved");
+  };
   const isRtl=lang==="ar";
 
   const handleLogo=(e)=>{
@@ -744,7 +994,10 @@ function StoreSettings({lang,storeInfo,setStoreInfo,showToast,mobile,logo,setLog
           <FF label={lang==="ar"?"العنوان (إنجليزي)":"Address (English)"}>
             <Inp value={form.addressEn} onChange={e=>f("addressEn",e.target.value)} placeholder="Tripoli - ..."/>
           </FF>
-          <FF label={lang==="ar"?"رابط الموقع على الخريطة":"Google Maps Link"}>
+          <FF label={lang==="ar"?"رابط الموقع (للـ QR Code)":"Website URL (for QR Code)"}>
+            <Inp value={form.siteUrl||""} onChange={e=>f("siteUrl",e.target.value)} placeholder="https://ayser-store.moneer-elamri.workers.dev"/>
+          </FF>
+          <FF label={lang==="ar"?"رابط Google Maps":"Google Maps Link"}>
             <Inp value={form.maps} onChange={e=>f("maps",e.target.value)} placeholder="https://maps.google.com/..."/>
           </FF>
         </div>
@@ -830,9 +1083,12 @@ function TrackingPage({dev,trackId,lang,setLang,isRtl}) {
 //  PRINT DEVICE RECEIPT (with QR)
 // ════════════════════════════════════════════════════
 function PrintDevice({dev,t,lang,onBack,storeInfo={},logo=""}) {
-  const baseUrl = window.location.origin + window.location.pathname;
+  // Use Cloudflare URL if running in Electron (file://) or fallback to current origin
+  const baseUrl = window.location.protocol === "file:"
+    ? (storeInfo.siteUrl || (() => { try{ return localStorage.getItem("ayser_siteUrl")||"https://ayser-store.moneer-elamri.workers.dev"; }catch(e){ return "https://ayser-store.moneer-elamri.workers.dev"; } })())
+    : window.location.origin + window.location.pathname;
   const trackUrl = `${baseUrl}?track=${dev.id}`;
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(trackUrl)}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(trackUrl)}`;
   const isRtl = lang==="ar";
   return (
     <div dir={isRtl?"rtl":"ltr"}>
@@ -1174,32 +1430,65 @@ function SoftwareSection({t,tools,setTools,isAdmin,showToast,user,lang,logA,can,
         </div>
         <Row s={{gap:10,marginTop:12}}><Btn onClick={save}>{t.save}</Btn><OBtn onClick={()=>{setShowF(false);setEditId(null);}}>{t.cancel}</OBtn></Row>
       </Card>}
-      <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"repeat(auto-fill,minmax(270px,1fr))",gap:12}}>
+      <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"repeat(auto-fill,minmax(280px,1fr))",gap:14}}>
         {tools.map(x=>{
-          const dl=daysLeft(x.expiryDate); const warn=dl!==null&&dl<=30;
+          const dl=daysLeft(x.expiryDate); const warn=dl!==null&&dl<=30; const isLife=x.subscriptionType==="lifetime";
+          // Pick icon based on name
+          const icons=["🔓","🛠","💿","🔧","⚙️","📲","🖥","🔑","💊","🛡","🔬","📡"];
+          const iconIndex=(x.id||0)%icons.length;
+          const cardIcon=icons[iconIndex];
           return (
-            <Card key={x.id} s={{border:`1px solid ${warn?"#f59e0b44":"#1e2d44"}`,borderTop:`3px solid ${x.subscriptionType==="lifetime"?"#10b981":"#8b5cf6"}`}}>
-              <Row s={{justifyContent:"space-between",marginBottom:10}}>
-                <div style={{fontSize:14,fontWeight:700,color:"#fff"}}>{lang==="ar"?x.name:x.nameEn}</div>
-                <Badge col={x.subscriptionType==="lifetime"?"#10b981":"#8b5cf6"}>{x.subscriptionType==="lifetime"?t.lifetime:t.yearly}</Badge>
+            <div key={x.id} className="card-ani" style={{background:"#151e2d",border:`1px solid ${warn?"#f59e0b55":isLife?"#10b98133":"#1e2e44"}`,borderRadius:18,padding:20,position:"relative",overflow:"hidden"}}>
+              {/* Top accent bar */}
+              <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:isLife?"linear-gradient(90deg,#10b981,#34d399)":"linear-gradient(90deg,#8b5cf6,#a78bfa)",borderRadius:"18px 18px 0 0"}}/>
+
+              {/* Header row */}
+              <Row s={{gap:12,marginBottom:14}}>
+                <div style={{width:48,height:48,borderRadius:14,background:isLife?"linear-gradient(135deg,#065f46,#10b981)":"linear-gradient(135deg,#4c1d95,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>
+                  {cardIcon}
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:14,fontWeight:700,color:"#e2e8f0",marginBottom:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{lang==="ar"?x.name:x.nameEn}</div>
+                  <Badge col={isLife?"#10b981":"#8b5cf6"}>{isLife?t.lifetime:t.yearly}</Badge>
+                </div>
+                <div style={{fontSize:17,fontWeight:800,color:isLife?"#34d399":"#a78bfa",flexShrink:0}}>{fmtCur(x.price,x.currency)}</div>
               </Row>
-              <div style={{fontSize:15,color:"#10b981",fontWeight:700,marginBottom:6}}>{fmtCur(x.price,x.currency)}</div>
-              {x.expiryDate&&<div style={{fontSize:11,marginBottom:6,color:warn?"#f59e0b":"#6b7280"}}>
-                {warn?"⚠️ ":"📅 "}{x.expiryDate} {warn&&dl!==null&&`(${dl} ${t.daysLeft})`}
-              </div>}
-              <div style={{fontSize:11,color:"#374151",marginBottom:10}}>
-                <div>📅 {x.date} {x.time}</div>
-                {isAdmin&&<div>👤 {lang==="ar"?x.addedByName:x.addedByNameEn}</div>}
+
+              {/* Expiry info */}
+              {x.expiryDate?(
+                <div style={{background:warn?"#78350f22":"#131926",borderRadius:10,padding:"8px 12px",marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:14}}>{warn?"⚠️":"📅"}</span>
+                  <div>
+                    <div style={{fontSize:11,color:warn?"#f59e0b":"#64748b"}}>{lang==="ar"?"تاريخ الانتهاء":"Expiry Date"}</div>
+                    <div style={{fontSize:12,fontWeight:600,color:warn?"#fbbf24":"#94a3b8"}}>{x.expiryDate} {warn&&dl!==null&&<span style={{color:"#f87171"}}>({dl} {t.daysLeft})</span>}</div>
+                  </div>
+                </div>
+              ):(
+                <div style={{background:"#065f4622",borderRadius:10,padding:"8px 12px",marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:14}}>♾️</span>
+                  <div style={{fontSize:12,color:"#34d399",fontWeight:600}}>{lang==="ar"?"مدى الحياة — لا تنتهي":"Lifetime — Never expires"}</div>
+                </div>
+              )}
+
+              {/* Meta */}
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:isAdmin?12:0}}>
+                <div style={{fontSize:10,color:"#374151"}}>📅 {x.date}</div>
+                {isAdmin&&<div style={{fontSize:10,color:"#374151"}}>👤 {lang==="ar"?x.addedByName:x.addedByNameEn}</div>}
               </div>
-              {isAdmin&&<Row s={{gap:6}}>
-                {can("software_edit")&&<OBtn onClick={()=>startEdit(x)} sm tc="#60a5fa" col="#1d4ed8" s={{flex:1}}>{t.edit}</OBtn>}
-                {can("software_delete")&&<OBtn onClick={()=>del(x.id)} sm tc="#f87171" col="#7f1d1d" s={{flex:1}}>{t.delete}</OBtn>}
+
+              {/* Actions */}
+              {isAdmin&&<Row s={{gap:7}}>
+                {can("software_edit")&&<OBtn onClick={()=>startEdit(x)} sm tc="#60a5fa" col="#1a3055" s={{flex:1}}>✏️ {t.edit}</OBtn>}
+                {can("software_delete")&&<OBtn onClick={()=>del(x.id)} sm tc="#f87171" col="#3f1919" s={{flex:1}}>🗑 {t.delete}</OBtn>}
               </Row>}
-            </Card>
+            </div>
           );
         })}
       </div>
-      {tools.length===0&&<Card s={{textAlign:"center",color:"#374151",padding:30}}>{t.noData}</Card>}
+      {tools.length===0&&<Card s={{textAlign:"center",color:"#374151",padding:40}}>
+        <div style={{fontSize:40,marginBottom:10}}>💿</div>
+        <div>{t.noData}</div>
+      </Card>}
     </div>
   );
 }
@@ -1207,7 +1496,7 @@ function SoftwareSection({t,tools,setTools,isAdmin,showToast,user,lang,logA,can,
 // ════════════════════════════════════════════════════
 //  INVOICES
 // ════════════════════════════════════════════════════
-function InvoicesSection({t,invoices,setInvoices,parts,setParts,user,showToast,lang,isAdmin,logA,can,mobile}) {
+function InvoicesSection({t,invoices,setInvoices,parts,setParts,user,showToast,lang,isAdmin,logA,can,mobile,storeInfo={},logo=""}) {
   const [showF,setShowF]=useState(false); const [printInv,setPrintInv]=useState(null);
   const [editInv,setEditInv]=useState(null);
   const [form,setForm]=useState({customerName:"",customerPhone:"",items:[],currency:"LYD"});
@@ -1254,7 +1543,7 @@ function InvoicesSection({t,invoices,setInvoices,parts,setParts,user,showToast,l
   };
 
   if(!can("invoices_view"))return <NoAccess t={t}/>;
-  if(printInv) return <PrintInv inv={printInv} t={t} lang={lang} onBack={()=>setPrintInv(null)}/>;
+  if(printInv) return <PrintInv inv={printInv} t={t} lang={lang} onBack={()=>setPrintInv(null)} logo={logo} storeInfo={storeInfo}/>;
   return (
     <div>
       <PH title={`🧾 ${t.invoices}`} action={can("invoices_add")&&<Btn col="#065f46" onClick={()=>{setShowF(!showF);setEditInv(null);setForm({customerName:"",customerPhone:"",items:[],currency:"LYD"});}}>+ {t.newInvoice}</Btn>}/>
@@ -1349,7 +1638,7 @@ function InvoicesSection({t,invoices,setInvoices,parts,setParts,user,showToast,l
 // ════════════════════════════════════════════════════
 //  PRINT INVOICE
 // ════════════════════════════════════════════════════
-function PrintInv({inv,t,lang,onBack}) {
+function PrintInv({inv,t,lang,onBack,logo="",storeInfo={}}) {
   return (
     <div>
       <div className="np" style={{marginBottom:16,display:"flex",gap:10}}>
@@ -1358,9 +1647,19 @@ function PrintInv({inv,t,lang,onBack}) {
       </div>
       <div style={{maxWidth:580,margin:"0 auto",background:"#0d1321",border:"1px solid #1e2d44",borderRadius:16,padding:28}}>
         <div style={{textAlign:"center",marginBottom:20,borderBottom:"1px solid #1e2d44",paddingBottom:16}}>
-          <div style={{fontSize:32}}>📱</div>
-          <h2 style={{fontSize:20,fontWeight:800,color:"#fff",margin:"8px 0 4px"}}>متجر ayser</h2>
+          {/* Logo */}
+          <div style={{width:70,height:70,borderRadius:16,background:"linear-gradient(135deg,#2563eb,#1d4ed8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,margin:"0 auto 10px",overflow:"hidden"}}>
+            {logo?<img src={logo} alt="logo" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:"📱"}
+          </div>
+          <h2 style={{fontSize:20,fontWeight:800,color:"#fff",margin:"6px 0 4px"}}>متجر ayser</h2>
           <p style={{color:"#6b7280",fontSize:11}}>ayser Store — فاتورة / Invoice</p>
+          {/* Store contact info */}
+          {(storeInfo.phone||storeInfo.address)&&(
+            <div style={{marginTop:8,fontSize:11,color:"#9ca3af",lineHeight:1.8}}>
+              {storeInfo.phone&&<div>📞 {storeInfo.phone}{storeInfo.phone2&&` / ${storeInfo.phone2}`}</div>}
+              {storeInfo.address&&<div>📍 {lang==="ar"?storeInfo.address:storeInfo.addressEn||storeInfo.address}</div>}
+            </div>
+          )}
         </div>
         <div style={{display:"flex",justifyContent:"space-between",marginBottom:18}}>
           <div><div style={{fontSize:11,color:"#6b7280"}}>{t.customerName}</div><div style={{fontSize:15,color:"#fff",fontWeight:600}}>{inv.customerName}</div><div style={{fontSize:12,color:"#9ca3af"}}>{inv.customerPhone}</div></div>
@@ -1492,11 +1791,12 @@ function ActivitySection({t,log,setLog,users,lang,mobile}) {
 // ════════════════════════════════════════════════════
 //  USERS + GRANULAR PERMISSIONS
 // ════════════════════════════════════════════════════
-function UsersSection({t,users,setUsers,showToast,lang,mobile,isRtl,pwRequests,setPwRequests}) {
+function UsersSection({t,users,setUsers,showToast,lang,mobile,isRtl,pwRequests,setPwRequests,invoices=[],devices=[]}) {
   const [showF,setShowF]=useState(false); const [editPermId,setEditPermId]=useState(null);
   const [showPwModal,setShowPwModal]=useState(false);
   const [pwForm,setPwForm]=useState({uid:"",current:"",newPw:"",confirm:""});
-  const empty={username:"",password:"",confirmPassword:"",name:"",nameEn:"",role:"technician",permissions:{...DEFAULT_PERMS}};
+  const [techReport,setTechReport]=useState(null); // userId for report modal
+  const empty={username:"",password:"",confirmPassword:"",name:"",nameEn:"",role:"technician",salary:"",salaryType:"fixed",permissions:{...DEFAULT_PERMS}};
   const [form,setForm]=useState(empty);
   const f=(k,v)=>setForm(p=>({...p,[k]:v}));
 
@@ -1592,13 +1892,13 @@ function UsersSection({t,users,setUsers,showToast,lang,mobile,isRtl,pwRequests,s
                 </Sel>
               </FF>
               <FF label={lang==="ar"?"كلمة المرور الحالية":"Current Password"}>
-                <Inp type="password" value={pwForm.current} onChange={e=>setPwForm(p=>({...p,current:e.target.value}))} placeholder="••••••••"/>
+                <PwField value={pwForm.current} onChange={e=>setPwForm(p=>({...p,current:e.target.value}))}/>
               </FF>
               <FF label={lang==="ar"?"كلمة المرور الجديدة":"New Password"}>
-                <Inp type="password" value={pwForm.newPw} onChange={e=>setPwForm(p=>({...p,newPw:e.target.value}))} placeholder="••••••••"/>
+                <PwField value={pwForm.newPw} onChange={e=>setPwForm(p=>({...p,newPw:e.target.value}))}/>
               </FF>
               <FF label={lang==="ar"?"تأكيد كلمة المرور الجديدة":"Confirm New Password"}>
-                <Inp type="password" value={pwForm.confirm} onChange={e=>setPwForm(p=>({...p,confirm:e.target.value}))} placeholder="••••••••"/>
+                <PwField value={pwForm.confirm} onChange={e=>setPwForm(p=>({...p,confirm:e.target.value}))}/>
               </FF>
               {pwForm.newPw&&pwForm.confirm&&pwForm.newPw!==pwForm.confirm&&(
                 <div style={{color:"#f87171",fontSize:12,background:"#7f1d1d22",padding:"8px 12px",borderRadius:8}}>
@@ -1612,12 +1912,8 @@ function UsersSection({t,users,setUsers,showToast,lang,mobile,isRtl,pwRequests,s
               )}
             </div>
             <Row s={{gap:10,marginTop:18}}>
-              <Btn onClick={changePassword} s={{flex:1}} col="#065f46">
-                {lang==="ar"?"حفظ التغييرات":"Save Changes"}
-              </Btn>
-              <OBtn onClick={()=>setShowPwModal(false)} s={{flex:1}}>
-                {t.cancel}
-              </OBtn>
+              <Btn onClick={changePassword} s={{flex:1}} col="#065f46">{lang==="ar"?"حفظ التغييرات":"Save Changes"}</Btn>
+              <OBtn onClick={()=>setShowPwModal(false)} s={{flex:1}}>{t.cancel}</OBtn>
             </Row>
           </div>
         </div>
@@ -1633,6 +1929,16 @@ function UsersSection({t,users,setUsers,showToast,lang,mobile,isRtl,pwRequests,s
           <FF label={t.role}><Sel value={form.role} onChange={e=>f("role",e.target.value)}><option value="admin">{t.admin}</option><option value="technician">{t.technician}</option></Sel></FF>
           <FF label={t.password}><Inp type="password" value={form.password} onChange={e=>f("password",e.target.value)}/></FF>
           <FF label={t.confirmPassword}><Inp type="password" value={form.confirmPassword} onChange={e=>f("confirmPassword",e.target.value)}/></FF>
+          {/* Salary / Commission */}
+          <FF label={lang==="ar"?"نوع الأجر":"Pay Type"}>
+            <Sel value={form.salaryType} onChange={e=>f("salaryType",e.target.value)}>
+              <option value="fixed">{lang==="ar"?"مرتب ثابت (د.ل)":"Fixed Salary (LYD)"}</option>
+              <option value="percent">{lang==="ar"?"نسبة من المبيعات (%)":"Commission (%)"}</option>
+            </Sel>
+          </FF>
+          <FF label={form.salaryType==="fixed"?(lang==="ar"?"المرتب الشهري (د.ل)":"Monthly Salary (LYD)"):(lang==="ar"?"نسبة العمولة (%)":"Commission (%)")}>
+            <Inp type="number" value={form.salary} onChange={e=>f("salary",e.target.value)} placeholder={form.salaryType==="fixed"?"0.00":"0"}/>
+          </FF>
         </div>
         {/* Permissions for new technician */}
         {form.role==="technician"&&(
@@ -1712,52 +2018,435 @@ function UsersSection({t,users,setUsers,showToast,lang,mobile,isRtl,pwRequests,s
       )}
 
       {/* User Cards */}
-      <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"repeat(auto-fill,minmax(240px,1fr))",gap:13}}>
+      <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"repeat(auto-fill,minmax(260px,1fr))",gap:13}}>
         {users.map(u=>(
           <div key={u.id} style={{background:"#0d1321",border:`1px solid ${u.active===false&&u.role!=="admin"?"#7f1d1d44":"#1e2d44"}`,borderRadius:14,padding:14,opacity:u.active===false&&u.role!=="admin"?0.7:1}}>
             <Row s={{justifyContent:"space-between",marginBottom:12}}>
               <div style={{width:40,height:40,borderRadius:10,background:u.role==="admin"?"linear-gradient(135deg,#b45309,#f59e0b)":u.active===false?"linear-gradient(135deg,#374151,#4b5563)":"linear-gradient(135deg,#1d4ed8,#2563eb)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>{u.role==="admin"?"👑":u.active===false?"🚫":"🔧"}</div>
               <Row s={{gap:6}}>
-                {u.role!=="admin"&&(
-                  <Badge col={u.active===false?"#ef4444":"#10b981"}>
-                    {u.active===false?(lang==="ar"?"موقوف":"Disabled"):(lang==="ar"?"نشط":"Active")}
-                  </Badge>
-                )}
+                {u.role!=="admin"&&<Badge col={u.active===false?"#ef4444":"#10b981"}>{u.active===false?(lang==="ar"?"موقوف":"Disabled"):(lang==="ar"?"نشط":"Active")}</Badge>}
                 <Badge col={u.role==="admin"?"#f59e0b":"#3b82f6"}>{u.role==="admin"?t.admin:t.technician}</Badge>
               </Row>
             </Row>
             <div style={{fontSize:15,fontWeight:700,color:u.active===false&&u.role!=="admin"?"#6b7280":"#fff"}}>{lang==="ar"?u.name:u.nameEn}</div>
-            <div style={{fontSize:11,color:"#374151",marginBottom:10}}>@{u.username}</div>
+            <div style={{fontSize:11,color:"#374151",marginBottom:6}}>@{u.username}</div>
+            <PasswordReveal password={u.password} lang={lang}/>
+
+            {/* Salary / Commission — admin only */}
+            {u.role==="technician"&&(
+              <div style={{background:"#070b14",borderRadius:9,padding:"8px 12px",marginBottom:10,border:"1px solid #1e2d44"}}>
+                <div style={{fontSize:10,color:"#6b7280",marginBottom:6}}>💰 {lang==="ar"?"الأجر الشهري":"Monthly Pay"}</div>
+                {u.salary?(
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                    <span style={{fontSize:14,fontWeight:700,color:"#fbbf24"}}>
+                      {u.salaryType==="percent"
+                        ? `${u.salary}% ${lang==="ar"?"من المبيعات":"of sales"}`
+                        : `${Number(u.salary).toFixed(2)} ${lang==="ar"?"د.ل":"LYD"}`}
+                    </span>
+                    <Badge col={u.salaryType==="percent"?"#8b5cf6":"#10b981"}>
+                      {u.salaryType==="percent"?(lang==="ar"?"نسبة":"Commission"):(lang==="ar"?"ثابت":"Fixed")}
+                    </Badge>
+                  </div>
+                ):(
+                  <span style={{fontSize:12,color:"#374151"}}>{lang==="ar"?"غير محدد":"Not set"}</span>
+                )}
+                {/* Edit salary inline */}
+                <SalaryEditor u={u} setUsers={setUsers} lang={lang}/>
+              </div>
+            )}
+
             {/* Permission Summary */}
             {u.role==="technician"&&(
-              <div style={{marginBottom:12}}>
-                <div style={{fontSize:10,color:"#6b7280",marginBottom:6}}>{t.permissions}:</div>
-                <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+              <div style={{marginBottom:10}}>
+                <div style={{fontSize:10,color:"#6b7280",marginBottom:5}}>{t.permissions}:</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
                   {PERM_GROUPS.map(group=>{
-                    const activeInGroup=group.keys.filter(k=>u.permissions[k]).length;
-                    const total=group.keys.length;
-                    if(activeInGroup===0)return null;
-                    return <span key={group.label} style={{padding:"2px 7px",borderRadius:20,fontSize:9,background:`${group.col}22`,color:group.col}}>
-                      {group.label.split(" ").slice(-1)[0]} {activeInGroup}/{total}
-                    </span>;
+                    const active=group.keys.filter(k=>u.permissions[k]).length;
+                    if(active===0)return null;
+                    return <span key={group.label} style={{padding:"2px 7px",borderRadius:20,fontSize:9,background:`${group.col}22`,color:group.col}}>{group.label.split(" ").slice(-1)[0]} {active}/{group.keys.length}</span>;
                   })}
                   {PERM_KEYS.filter(k=>!u.permissions[k]).length===PERM_KEYS.length&&<span style={{fontSize:9,color:"#ef4444"}}>🚫 {lang==="ar"?"لا صلاحيات":"No permissions"}</span>}
                 </div>
               </div>
             )}
-            <Row s={{gap:6}}>
-              <button onClick={()=>setEditPermId(u.id)} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid #b4530944",background:"#78350f22",color:"#fbbf24",fontSize:12,cursor:"pointer"}}>⚙️ {t.permissions}</button>
+
+            <Row s={{gap:5,flexWrap:"wrap"}}>
+              <button onClick={()=>setEditPermId(u.id)} style={{flex:1,padding:"7px",borderRadius:8,border:"1px solid #b4530944",background:"#78350f22",color:"#fbbf24",fontSize:11,cursor:"pointer"}}>⚙️ {t.permissions}</button>
+              {u.role!=="admin"&&<button onClick={()=>setTechReport(u.id)} style={{flex:1,padding:"7px",borderRadius:8,border:"1px solid #1d4ed844",background:"#1d4ed822",color:"#60a5fa",fontSize:11,cursor:"pointer"}}>📊 {lang==="ar"?"تقرير":"Report"}</button>}
               {u.role!=="admin"&&(
                 <button onClick={()=>setUsers(p=>p.map(x=>x.id===u.id?{...x,active:x.active===false?true:false}:x))}
-                  style={{padding:"8px 10px",borderRadius:8,border:u.active===false?"1px solid #065f4644":"1px solid #7f1d1d44",background:u.active===false?"#065f4622":"#7f1d1d22",color:u.active===false?"#34d399":"#f87171",fontSize:12,cursor:"pointer"}}>
-                  {u.active===false?(lang==="ar"?"تشغيل ✅":"Enable ✅"):(lang==="ar"?"إيقاف 🚫":"Disable 🚫")}
+                  style={{padding:"7px 9px",borderRadius:8,border:u.active===false?"1px solid #065f4644":"1px solid #7f1d1d44",background:u.active===false?"#065f4622":"#7f1d1d22",color:u.active===false?"#34d399":"#f87171",fontSize:11,cursor:"pointer"}}>
+                  {u.active===false?"✅":"🚫"}
                 </button>
               )}
-              {u.id!==1&&<button onClick={()=>setUsers(p=>p.filter(x=>x.id!==u.id))} style={{padding:"8px 12px",borderRadius:8,border:"1px solid #7f1d1d44",background:"#7f1d1d22",color:"#f87171",fontSize:12,cursor:"pointer"}}>{t.delete}</button>}
+              {u.id!==1&&<button onClick={()=>setUsers(p=>p.filter(x=>x.id!==u.id))} style={{padding:"7px 9px",borderRadius:8,border:"1px solid #7f1d1d44",background:"#7f1d1d22",color:"#f87171",fontSize:11,cursor:"pointer"}}>🗑️</button>}
             </Row>
           </div>
         ))}
       </div>
+
+      {/* Technician Report Modal */}
+      {techReport&&<TechReportModal userId={techReport} users={users} invoices={invoices} devices={devices} lang={lang} mobile={mobile} isRtl={isRtl} onClose={()=>setTechReport(null)}/>}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════
+//  SALARY EDITOR (inline in user card)
+// ════════════════════════════════════════════════════
+function SalaryEditor({u,setUsers,lang}) {
+  const [open,setOpen]=useState(false);
+  const [val,setVal]=useState(u.salary||"");
+  const [type,setType]=useState(u.salaryType||"fixed");
+  if(!open) return (
+    <button onClick={()=>setOpen(true)} style={{marginTop:6,background:"none",border:"none",color:"#60a5fa",fontSize:11,cursor:"pointer",padding:0,textDecoration:"underline"}}>
+      ✏️ {lang==="ar"?"تعديل الأجر":"Edit Pay"}
+    </button>
+  );
+  return (
+    <div style={{marginTop:8,display:"flex",gap:6,flexWrap:"wrap"}}>
+      <select value={type} onChange={e=>setType(e.target.value)} style={{...{padding:"5px 8px",borderRadius:7,border:"1px solid #1e2d44",background:"#0d1321",color:"#e2e8f0",fontSize:11,outline:"none"}}}>
+        <option value="fixed">{lang==="ar"?"ثابت":"Fixed"}</option>
+        <option value="percent">{lang==="ar"?"نسبة %":"% Comm."}</option>
+      </select>
+      <input type="number" value={val} onChange={e=>setVal(e.target.value)} placeholder={type==="fixed"?"0.00":"0"} style={{width:80,padding:"5px 8px",borderRadius:7,border:"1px solid #1e2d44",background:"#0d1321",color:"#e2e8f0",fontSize:11,outline:"none"}}/>
+      <button onClick={()=>{setUsers(p=>p.map(x=>x.id===u.id?{...x,salary:val,salaryType:type}:x));setOpen(false);}} style={{padding:"5px 10px",borderRadius:7,border:"none",background:"#065f46",color:"#34d399",fontSize:11,cursor:"pointer"}}>✓</button>
+      <button onClick={()=>setOpen(false)} style={{padding:"5px 8px",borderRadius:7,border:"1px solid #1e2d44",background:"transparent",color:"#6b7280",fontSize:11,cursor:"pointer"}}>✕</button>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════
+//  TECH REPORT MODAL
+// ════════════════════════════════════════════════════
+function TechReportModal({userId,users,invoices,devices,lang,mobile,isRtl,onClose}) {
+  const u=users.find(x=>x.id===userId);
+  if(!u)return null;
+  const [month,setMonth]=useState(today().slice(0,7));
+
+  // Filter by technician
+  const allInv=invoices.filter(i=>i.technicianId===userId);
+  const allDev=devices.filter(d=>d.technicianId===userId);
+  const monInv=allInv.filter(i=>i.date.startsWith(month));
+  const monDev=allDev.filter(d=>d.receivedDate.startsWith(month));
+  const monRev=monInv.reduce((s,i)=>s+Number(i.total),0);
+
+  // Commission calc
+  let commission=0;
+  if(u.salary&&u.salaryType==="percent") commission=monRev*(Number(u.salary)/100);
+  else if(u.salary&&u.salaryType==="fixed") commission=Number(u.salary);
+
+  const devByStatus={waiting:allDev.filter(d=>d.status==="waiting").length,in_progress:allDev.filter(d=>d.status==="in_progress").length,ready:allDev.filter(d=>d.status==="ready").length};
+
+  const exportCSV=()=>{
+    const rows=[
+      [lang==="ar"?"الفني":"Technician",lang==="ar"?u.name:u.nameEn],
+      [lang==="ar"?"الشهر":"Month",month],
+      [""],
+      [lang==="ar"?"الفواتير":"Invoices"],
+      ["#",lang==="ar"?"العميل":"Customer",lang==="ar"?"الإجمالي":"Total",lang==="ar"?"التاريخ":"Date"],
+      ...monInv.map(i=>[i.id,i.customerName,i.total,i.date]),
+      [""],
+      [lang==="ar"?"الأجهزة":"Devices"],
+      ["#",lang==="ar"?"العميل":"Customer",lang==="ar"?"الجهاز":"Device",lang==="ar"?"الحالة":"Status",lang==="ar"?"التاريخ":"Date"],
+      ...monDev.map(d=>[d.id,d.customerName,d.deviceType,d.status,d.receivedDate]),
+      [""],
+      [lang==="ar"?"إجمالي المبيعات":"Total Sales",monRev],
+      [lang==="ar"?`الأجر (${u.salaryType==="percent"?u.salary+"%":"ثابت"})`:`Pay (${u.salaryType==="percent"?u.salary+"%":"Fixed"})`,commission.toFixed(2)],
+    ];
+    const csv=rows.map(r=>r.join(",")).join("\n");
+    const b=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"});
+    const url=URL.createObjectURL(b);
+    const a=document.createElement("a");
+    a.href=url;a.download=`tech-report-${lang==="ar"?u.name:u.nameEn}-${month}.csv`;a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"#000000dd",zIndex:400,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} dir={isRtl?"rtl":"ltr"}>
+      <div style={{background:"#0a0f1e",border:"1px solid #1e2d44",borderRadius:18,width:"100%",maxWidth:680,maxHeight:"90vh",overflowY:"auto",fontFamily:isRtl?"'Tajawal',sans-serif":"'Outfit',sans-serif"}}>
+        {/* Header */}
+        <div style={{padding:"20px 24px 16px",borderBottom:"1px solid #1e2d44",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
+          <div>
+            <h3 style={{color:"#fff",fontSize:16,fontWeight:700,margin:0}}>
+              📊 {lang==="ar"?"تقرير الفني":"Technician Report"} — {lang==="ar"?u.name:u.nameEn}
+            </h3>
+            <div style={{fontSize:11,color:"#6b7280",marginTop:3}}>@{u.username}</div>
+          </div>
+          <Row s={{gap:8}}>
+            <input type="month" value={month} onChange={e=>setMonth(e.target.value)} style={{padding:"7px 10px",borderRadius:9,border:"1px solid #1e2d44",background:"#070b14",color:"#e2e8f0",fontSize:12,outline:"none"}}/>
+            <button onClick={exportCSV} style={{padding:"8px 14px",borderRadius:9,border:"none",background:"#065f46",color:"#34d399",fontSize:12,cursor:"pointer",fontWeight:600}}>
+              📤 {lang==="ar"?"تصدير CSV":"Export CSV"}
+            </button>
+            <button onClick={onClose} style={{background:"none",border:"none",color:"#6b7280",fontSize:22,cursor:"pointer"}}>✕</button>
+          </Row>
+        </div>
+
+        <div style={{padding:20}}>
+          {/* Summary Cards */}
+          <div style={{display:"grid",gridTemplateColumns:mobile?"1fr 1fr":"repeat(4,1fr)",gap:10,marginBottom:20}}>
+            {[
+              {icon:"🧾",label:lang==="ar"?"فواتير الشهر":"Month Invoices",val:monInv.length,col:"#3b82f6"},
+              {icon:"💰",label:lang==="ar"?"مبيعات الشهر":"Month Revenue",val:`${monRev.toFixed(2)} ${lang==="ar"?"د.ل":"LYD"}`,col:"#10b981"},
+              {icon:"📱",label:lang==="ar"?"أجهزة الشهر":"Month Devices",val:monDev.length,col:"#8b5cf6"},
+              {icon:"💵",label:u.salary?(u.salaryType==="percent"?`${lang==="ar"?"عمولة":"Comm."} ${u.salary}%`:(lang==="ar"?"مرتب ثابت":"Fixed Salary")):(lang==="ar"?"الأجر":"Pay"),
+               val:u.salary?`${commission.toFixed(2)} ${lang==="ar"?"د.ل":"LYD"}`:(lang==="ar"?"غير محدد":"Not set"),col:"#fbbf24"},
+            ].map((c,i)=>(
+              <div key={i} style={{background:"#0d1321",border:"1px solid #1e2d44",borderRadius:12,padding:12,borderTop:`3px solid ${c.col}`,textAlign:"center"}}>
+                <div style={{fontSize:22}}>{c.icon}</div>
+                <div style={{fontSize:14,fontWeight:700,color:"#fff",marginTop:5}}>{c.val}</div>
+                <div style={{fontSize:10,color:"#6b7280",marginTop:3}}>{c.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Device Status */}
+          <div style={{background:"#0d1321",border:"1px solid #1e2d44",borderRadius:12,padding:14,marginBottom:16}}>
+            <div style={{fontSize:12,fontWeight:700,color:"#9ca3af",marginBottom:10}}>📱 {lang==="ar"?"حالة الأجهزة الكلية":"All Devices Status"}</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+              {[["⏳",lang==="ar"?"انتظار":"Waiting",devByStatus.waiting,"#f59e0b"],["🔧",lang==="ar"?"صيانة":"In Progress",devByStatus.in_progress,"#3b82f6"],["✅",lang==="ar"?"جاهز":"Ready",devByStatus.ready,"#10b981"]].map(([ic,lb,vl,cl],i)=>(
+                <div key={i} style={{textAlign:"center",background:"#070b14",borderRadius:9,padding:10}}>
+                  <div style={{fontSize:18}}>{ic}</div>
+                  <div style={{fontSize:16,fontWeight:700,color:cl}}>{vl}</div>
+                  <div style={{fontSize:10,color:"#6b7280"}}>{lb}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Invoices Table */}
+          <div style={{marginBottom:16}}>
+            <div style={{fontSize:12,fontWeight:700,color:"#9ca3af",marginBottom:8}}>🧾 {lang==="ar"?"فواتير الشهر":"Month Invoices"} ({monInv.length})</div>
+            {monInv.length===0?<div style={{color:"#374151",fontSize:12,padding:16,textAlign:"center"}}>{lang==="ar"?"لا توجد فواتير":"No invoices"}</div>:(
+              <div style={{overflowX:"auto"}}>
+                <table style={{width:"100%",borderCollapse:"collapse",minWidth:360}}>
+                  <thead><tr style={{background:"#070b14"}}>
+                    {["#",lang==="ar"?"العميل":"Customer",lang==="ar"?"الإجمالي":"Total",lang==="ar"?"التاريخ":"Date"].map((h,i)=><th key={i} style={{padding:"8px 12px",fontSize:11,color:"#6b7280",textAlign:"inherit"}}>{h}</th>)}
+                  </tr></thead>
+                  <tbody>{monInv.map(inv=>(
+                    <tr key={inv.id} style={{borderTop:"1px solid #1e2d4411"}}>
+                      <td style={{padding:"8px 12px",fontSize:12,color:"#60a5fa"}}>#{inv.id}</td>
+                      <td style={{padding:"8px 12px",fontSize:13,color:"#e2e8f0"}}>{inv.customerName}</td>
+                      <td style={{padding:"8px 12px",fontSize:13,color:"#10b981",fontWeight:600}}>{inv.total} {lang==="ar"?"د.ل":"LYD"}</td>
+                      <td style={{padding:"8px 12px",fontSize:11,color:"#6b7280"}}>{inv.date}</td>
+                    </tr>
+                  ))}</tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Devices Table */}
+          <div>
+            <div style={{fontSize:12,fontWeight:700,color:"#9ca3af",marginBottom:8}}>📱 {lang==="ar"?"أجهزة الشهر":"Month Devices"} ({monDev.length})</div>
+            {monDev.length===0?<div style={{color:"#374151",fontSize:12,padding:16,textAlign:"center"}}>{lang==="ar"?"لا توجد أجهزة":"No devices"}</div>:(
+              <div style={{overflowX:"auto"}}>
+                <table style={{width:"100%",borderCollapse:"collapse",minWidth:420}}>
+                  <thead><tr style={{background:"#070b14"}}>
+                    {["#",lang==="ar"?"العميل":"Customer",lang==="ar"?"الجهاز":"Device",lang==="ar"?"الخلل":"Fault",lang==="ar"?"الحالة":"Status",lang==="ar"?"التاريخ":"Date"].map((h,i)=><th key={i} style={{padding:"8px 10px",fontSize:11,color:"#6b7280",textAlign:"inherit"}}>{h}</th>)}
+                  </tr></thead>
+                  <tbody>{monDev.map(d=>(
+                    <tr key={d.id} style={{borderTop:"1px solid #1e2d4411"}}>
+                      <td style={{padding:"8px 10px",fontSize:12,color:"#60a5fa"}}>#{d.id}</td>
+                      <td style={{padding:"8px 10px",fontSize:12,color:"#e2e8f0"}}>{d.customerName}</td>
+                      <td style={{padding:"8px 10px",fontSize:12,color:"#e2e8f0"}}>{d.deviceType}</td>
+                      <td style={{padding:"8px 10px",fontSize:11,color:"#f87171"}}>{lang==="ar"?d.faultType:d.faultTypeEn||d.faultType}</td>
+                      <td style={{padding:"8px 10px"}}>
+                        <span style={{padding:"2px 8px",borderRadius:20,fontSize:10,fontWeight:600,background:d.status==="ready"?"#10b98122":d.status==="in_progress"?"#3b82f622":"#f59e0b22",color:d.status==="ready"?"#10b981":d.status==="in_progress"?"#60a5fa":"#f59e0b"}}>
+                          {d.status==="ready"?(lang==="ar"?"جاهز":"Ready"):d.status==="in_progress"?(lang==="ar"?"صيانة":"In Progress"):(lang==="ar"?"انتظار":"Waiting")}
+                        </span>
+                      </td>
+                      <td style={{padding:"8px 10px",fontSize:11,color:"#6b7280"}}>{d.receivedDate}</td>
+                    </tr>
+                  ))}</tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════
+//  SALARIES SECTION
+// ════════════════════════════════════════════════════
+function SalariesSection({lang,users,invoices,salaryRecords,setSalaryRecords,mobile,showToast}) {
+  const isRtl=lang==="ar";
+  const [month,setMonth]=useState(today().slice(0,7));
+  const [showForm,setShowForm]=useState(null); // userId
+  const [form,setForm]=useState({bonus:"",bonusNote:"",deduct:"",deductNote:""});
+
+  const techs=users.filter(u=>u.role==="technician");
+
+  // Get record for user+month
+  const getRecord=(uid)=>salaryRecords.find(r=>r.userId===uid&&r.month===month)||{bonus:0,bonusNote:"",deduct:0,deductNote:""};
+
+  // Calculate salary for a tech this month
+  const calcSalary=(u)=>{
+    const monInv=invoices.filter(i=>i.technicianId===u.id&&i.date.startsWith(month));
+    const revenue=monInv.reduce((s,i)=>s+Number(i.total),0);
+    const rec=getRecord(u.id);
+    let base=0;
+    if(u.salaryType==="percent"&&u.salary) base=revenue*(Number(u.salary)/100);
+    else if(u.salary) base=Number(u.salary);
+    const net=base+Number(rec.bonus||0)-Number(rec.deduct||0);
+    return {base,revenue,invoices:monInv.length,bonus:Number(rec.bonus||0),deduct:Number(rec.deduct||0),net,rec};
+  };
+
+  const saveRecord=(uid)=>{
+    setSalaryRecords(prev=>{
+      const filtered=prev.filter(r=>!(r.userId===uid&&r.month===month));
+      return [...filtered,{userId:uid,month,bonus:Number(form.bonus)||0,bonusNote:form.bonusNote,deduct:Number(form.deduct)||0,deductNote:form.deductNote,savedAt:new Date().toISOString()}];
+    });
+    showToast(lang==="ar"?"تم حفظ بيانات المرتب":"Salary record saved");
+    setShowForm(null);setForm({bonus:"",bonusNote:"",deduct:"",deductNote:""});
+  };
+
+  const openForm=(u)=>{
+    const rec=getRecord(u.id);
+    setForm({bonus:rec.bonus||"",bonusNote:rec.bonusNote||"",deduct:rec.deduct||"",deductNote:rec.deductNote||""});
+    setShowForm(u.id);
+  };
+
+  const exportCSV=()=>{
+    const rows=[
+      [lang==="ar"?"الشهر":"Month",month],[""],
+      [lang==="ar"?"الفني":"Tech",lang==="ar"?"المرتب الأساسي":"Base",lang==="ar"?"المبيعات":"Revenue",lang==="ar"?"المكافأة":"Bonus",lang==="ar"?"الخصم":"Deduct",lang==="ar"?"الصافي":"Net"],
+      ...techs.map(u=>{const s=calcSalary(u);return[lang==="ar"?u.name:u.nameEn,s.base.toFixed(2),s.revenue.toFixed(2),s.bonus.toFixed(2),s.deduct.toFixed(2),s.net.toFixed(2)];})
+    ];
+    const csv=rows.map(r=>r.join(",")).join("\n");
+    const b=new Blob(["\uFEFF"+csv],{type:"text/csv"});
+    const url=URL.createObjectURL(b);
+    const a=document.createElement("a");
+    a.href=url;a.download=`salaries-${month}.csv`;a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const totalNet=techs.reduce((s,u)=>s+calcSalary(u).net,0);
+
+  return (
+    <div dir={isRtl?"rtl":"ltr"}>
+      {/* Header */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:10}}>
+        <h2 style={{fontSize:19,fontWeight:700,color:"#e2e8f0",margin:0}}>💰 {lang==="ar"?"المرتبات":"Salaries"}</h2>
+        <Row s={{gap:10,flexWrap:"wrap"}}>
+          <input type="month" value={month} onChange={e=>setMonth(e.target.value)}
+            style={{padding:"8px 12px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#e2e8f0",fontSize:13,outline:"none"}}/>
+          <button onClick={exportCSV} style={{padding:"8px 16px",borderRadius:10,border:"none",background:"#065f46",color:"#34d399",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+            📤 {lang==="ar"?"تصدير CSV":"Export CSV"}
+          </button>
+        </Row>
+      </div>
+
+      {/* Summary card */}
+      <div style={{background:"linear-gradient(135deg,#1a3055,#0d1f38)",border:"1px solid #2a3a52",borderRadius:16,padding:18,marginBottom:20,display:"flex",gap:20,flexWrap:"wrap"}}>
+        <div style={{textAlign:"center",flex:1}}>
+          <div style={{fontSize:11,color:"#64748b",marginBottom:4}}>{lang==="ar"?"إجمالي المرتبات":"Total Salaries"}</div>
+          <div style={{fontSize:22,fontWeight:800,color:"#fbbf24"}}>{totalNet.toFixed(2)} {lang==="ar"?"د.ل":"LYD"}</div>
+        </div>
+        <div style={{textAlign:"center",flex:1}}>
+          <div style={{fontSize:11,color:"#64748b",marginBottom:4}}>{lang==="ar"?"عدد الفنيين":"Technicians"}</div>
+          <div style={{fontSize:22,fontWeight:800,color:"#60a5fa"}}>{techs.length}</div>
+        </div>
+        <div style={{textAlign:"center",flex:1}}>
+          <div style={{fontSize:11,color:"#64748b",marginBottom:4}}>{lang==="ar"?"الشهر":"Month"}</div>
+          <div style={{fontSize:16,fontWeight:700,color:"#a78bfa"}}>{month}</div>
+        </div>
+      </div>
+
+      {/* Tech cards */}
+      {techs.length===0?(
+        <Card s={{textAlign:"center",padding:40,color:"#374151"}}>
+          <div style={{fontSize:40,marginBottom:10}}>👥</div>
+          <div>{lang==="ar"?"لا يوجد فنيين بعد":"No technicians yet"}</div>
+        </Card>
+      ):(
+        <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"repeat(auto-fill,minmax(300px,1fr))",gap:14}}>
+          {techs.map(u=>{
+            const s=calcSalary(u);
+            const isEditing=showForm===u.id;
+            return (
+              <div key={u.id} className="card-ani" style={{background:"#151e2d",border:"1px solid #1e2e44",borderRadius:18,padding:20,position:"relative",overflow:"hidden"}}>
+                {/* Top bar */}
+                <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:"linear-gradient(90deg,#f59e0b,#fbbf24)"}}/>
+
+                {/* Tech header */}
+                <Row s={{gap:12,marginBottom:16}}>
+                  <div style={{width:46,height:46,borderRadius:13,background:"linear-gradient(135deg,#b45309,#f59e0b)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>🔧</div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:14,fontWeight:700,color:"#e2e8f0"}}>{lang==="ar"?u.name:u.nameEn}</div>
+                    <div style={{fontSize:11,color:"#64748b"}}>@{u.username}</div>
+                    <div style={{fontSize:11,color:"#a78bfa",marginTop:2}}>
+                      {u.salary?(u.salaryType==="percent"?`${u.salary}% ${lang==="ar"?"من المبيعات":"of sales"}`:`${lang==="ar"?"ثابت":"Fixed"}: ${Number(u.salary).toFixed(2)} ${lang==="ar"?"د.ل":"LYD"}`):(lang==="ar"?"غير محدد":"Not set")}
+                    </div>
+                  </div>
+                </Row>
+
+                {/* Stats grid */}
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+                  {[
+                    {label:lang==="ar"?"المبيعات":"Revenue",val:`${s.revenue.toFixed(2)} ${lang==="ar"?"د.ل":"LYD"}`,col:"#10b981",icon:"💰"},
+                    {label:lang==="ar"?"الفواتير":"Invoices",val:s.invoices,col:"#3b82f6",icon:"🧾"},
+                    {label:lang==="ar"?"مكافأة":"Bonus",val:`+${s.bonus.toFixed(2)}`,col:"#f59e0b",icon:"🎁"},
+                    {label:lang==="ar"?"خصم":"Deduct",val:`-${s.deduct.toFixed(2)}`,col:"#ef4444",icon:"✂️"},
+                  ].map((item,i)=>(
+                    <div key={i} style={{background:"#0f1520",borderRadius:10,padding:"10px 12px"}}>
+                      <div style={{fontSize:10,color:"#64748b",marginBottom:4}}>{item.icon} {item.label}</div>
+                      <div style={{fontSize:14,fontWeight:700,color:item.col}}>{item.val}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Net salary */}
+                <div style={{background:"linear-gradient(135deg,#1a3055,#0d1f38)",borderRadius:12,padding:"12px 16px",marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span style={{fontSize:13,color:"#94a3b8"}}>{lang==="ar"?"الصافي المستحق":"Net Salary"}</span>
+                  <span style={{fontSize:20,fontWeight:800,color:"#fbbf24"}}>{s.net.toFixed(2)} <span style={{fontSize:12}}>{lang==="ar"?"د.ل":"LYD"}</span></span>
+                </div>
+
+                {/* Notes */}
+                {(s.rec.bonusNote||s.rec.deductNote)&&(
+                  <div style={{background:"#0f1520",borderRadius:10,padding:"8px 12px",marginBottom:12,fontSize:11,color:"#64748b",lineHeight:1.8}}>
+                    {s.rec.bonusNote&&<div>🎁 {s.rec.bonusNote}</div>}
+                    {s.rec.deductNote&&<div>✂️ {s.rec.deductNote}</div>}
+                  </div>
+                )}
+
+                {/* Edit form */}
+                {isEditing?(
+                  <div style={{background:"#0f1520",borderRadius:12,padding:14,marginBottom:10}}>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+                      <FF label={`🎁 ${lang==="ar"?"مكافأة (د.ل)":"Bonus (LYD)"}`}>
+                        <Inp type="number" value={form.bonus} onChange={e=>setForm(p=>({...p,bonus:e.target.value}))} placeholder="0"/>
+                      </FF>
+                      <FF label={`✂️ ${lang==="ar"?"خصم (د.ل)":"Deduct (LYD)"}`}>
+                        <Inp type="number" value={form.deduct} onChange={e=>setForm(p=>({...p,deduct:e.target.value}))} placeholder="0"/>
+                      </FF>
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+                      <FF label={lang==="ar"?"سبب المكافأة":"Bonus Reason"}>
+                        <Inp value={form.bonusNote} onChange={e=>setForm(p=>({...p,bonusNote:e.target.value}))} placeholder={lang==="ar"?"اختياري...":"Optional..."}/>
+                      </FF>
+                      <FF label={lang==="ar"?"سبب الخصم":"Deduct Reason"}>
+                        <Inp value={form.deductNote} onChange={e=>setForm(p=>({...p,deductNote:e.target.value}))} placeholder={lang==="ar"?"اختياري...":"Optional..."}/>
+                      </FF>
+                    </div>
+                    <Row s={{gap:8}}>
+                      <Btn onClick={()=>saveRecord(u.id)} col="#065f46" s={{flex:1}}>💾 {lang==="ar"?"حفظ":"Save"}</Btn>
+                      <OBtn onClick={()=>setShowForm(null)} s={{flex:1}}>{lang==="ar"?"إلغاء":"Cancel"}</OBtn>
+                    </Row>
+                  </div>
+                ):(
+                  <button onClick={()=>openForm(u)} style={{width:"100%",padding:"9px",borderRadius:10,border:"1px solid #2a3a52",background:"transparent",color:"#94a3b8",fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                    ✏️ {lang==="ar"?"تعديل المكافأة والخصم":"Edit Bonus & Deduction"}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -1771,7 +2460,20 @@ function BackupSection({t,users,parts,tools,invoices,devices,setUsers,setParts,s
   const build=()=>({version:"2.0",app:"ayser Store",savedAt:new Date().toISOString(),savedBy:lang==="ar"?user.name:user.nameEn,data:{users,parts,tools,invoices,devices}});
   const dl=()=>{const b=build();const j=JSON.stringify(b,null,2);const bl=new Blob([j],{type:"application/json"});const u=URL.createObjectURL(bl);const a=document.createElement("a");a.href=u;a.download=`ayser-backup-${today()}.json`;a.click();URL.revokeObjectURL(u);showToast(t.backupSuccess);};
   const parse=(file)=>{if(!file||!file.name.endsWith(".json")){showToast(t.invalidFile,"error");return;}const r=new FileReader();r.onload=e=>{try{const p=JSON.parse(e.target.result);if(!p.data||!p.data.users)throw new Error();setPending(p);setConfirm(true);}catch{showToast(t.invalidFile,"error");}};r.readAsText(file);};
-  const restore=()=>{if(!pending)return;const d=pending.data;setUsers(d.users);setParts(d.parts);setTools(d.tools);setInvoices(d.invoices);setDevices(d.devices||[]);setConfirm(false);setPending(null);showToast(t.restoreSuccess);};
+  const restore=()=>{
+    if(!pending)return;
+    const d=pending.data;
+    setUsers(d.users);setParts(d.parts);setTools(d.tools);setInvoices(d.invoices);setDevices(d.devices||[]);
+    // Also persist to localStorage immediately
+    try{
+      localStorage.setItem("ayser_users",JSON.stringify(d.users));
+      localStorage.setItem("ayser_parts",JSON.stringify(d.parts));
+      localStorage.setItem("ayser_tools",JSON.stringify(d.tools));
+      localStorage.setItem("ayser_invoices",JSON.stringify(d.invoices));
+      localStorage.setItem("ayser_devices",JSON.stringify(d.devices||[]));
+    }catch(e){}
+    setConfirm(false);setPending(null);showToast(t.restoreSuccess);
+  };
   const stats=[{icon:"🔧",c:parts.length,l:t.partsCount,col:"#3b82f6"},{icon:"💾",c:tools.length,l:t.toolsCount,col:"#8b5cf6"},{icon:"🧾",c:invoices.length,l:t.invoicesCount,col:"#10b981"},{icon:"👥",c:users.length,l:t.usersCount,col:"#f59e0b"},{icon:"📱",c:devices.length,l:t.devicesCount,col:"#06b6d4"}];
   return (
     <div>
