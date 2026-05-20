@@ -9,6 +9,7 @@ const DEFAULT_PERMS = {
   devices_view:true, devices_add:true, devices_edit:true,
   invoices_view:true, invoices_add:true,
   reports_view:false,
+  purchases_view:false, purchases_add:false,
 };
 const ADMIN_PERMS = Object.fromEntries(Object.keys(DEFAULT_PERMS).map(k=>[k,true]));
 const PERM_KEYS = Object.keys(DEFAULT_PERMS);
@@ -70,6 +71,7 @@ const T = {
     perm_devices_edit:"تعديل حالة الأجهزة",
     perm_invoices_view:"عرض الفواتير",perm_invoices_add:"إنشاء فواتير",
     perm_reports_view:"عرض التقارير",
+    perm_purchases_view:"عرض المشتريات", perm_purchases_add:"إضافة مشتريات",
     technicianPerf:"أداء الفنيين",totalActions:"إجمالي العمليات",
     clearLog:"مسح السجل",exportLog:"تصدير",allUsers:"جميع المستخدمين",
     createBackup:"إنشاء نسخة احتياطية",restoreBackup:"استعادة النسخة",
@@ -117,6 +119,7 @@ const T = {
     perm_devices_edit:"Edit Device Status",
     perm_invoices_view:"View Invoices",perm_invoices_add:"Create Invoices",
     perm_reports_view:"View Reports",
+    perm_purchases_view:"View Purchases", perm_purchases_add:"Add Purchases",
     technicianPerf:"Technician Performance",totalActions:"Total Actions",
     clearLog:"Clear Log",exportLog:"Export",allUsers:"All Users",
     createBackup:"Create Backup",restoreBackup:"Restore",
@@ -143,6 +146,17 @@ const daysLeft = (d) => { if(!d)return null; return Math.ceil((new Date(d)-new D
 const today = () => new Date().toISOString().slice(0,10);
 const SC = {waiting:"#f59e0b",in_progress:"#3b82f6",ready:"#10b981"};
 const SI = {waiting:"⏳",in_progress:"🔧",ready:"✅"};
+
+// ─── THEMES ───────────────────────────────────────────────────────────────────
+const THEMES = {
+  dark:  {name:"🌙 داكن",    nameEn:"🌙 Dark",    bg:"#0f1117",sidebar:"#0d1421",card:"#151e2d",border:"#1e2e44",text:"#e2e8f0",sub:"#64748b",inp:"#131926",inpBorder:"#2a3a52",navActive:"#1a3055",navActiveTxt:"#60a5fa",accent:"#2563eb"},
+  light: {name:"☀️ فاتح",    nameEn:"☀️ Light",   bg:"#f1f5f9",sidebar:"#ffffff",card:"#ffffff",border:"#e2e8f0",text:"#1e293b",sub:"#64748b",inp:"#f8fafc", inpBorder:"#cbd5e1",navActive:"#dbeafe",navActiveTxt:"#1d4ed8",accent:"#2563eb"},
+  blue:  {name:"🌊 أزرق",    nameEn:"🌊 Blue",    bg:"#071428",sidebar:"#0a1e3c",card:"#0d2040",border:"#1a3a5f",text:"#e2e8f0",sub:"#6b8cba",inp:"#071428", inpBorder:"#1a3a5f",navActive:"#1a3a6e",navActiveTxt:"#60a5fa",accent:"#1d4ed8"},
+  green: {name:"🌿 أخضر",   nameEn:"🌿 Green",   bg:"#071a0e",sidebar:"#0a2016",card:"#0d2518",border:"#1a4025",text:"#e2e8f0",sub:"#6bba8c",inp:"#071a0e", inpBorder:"#1a4025",navActive:"#1a4a25",navActiveTxt:"#34d399",accent:"#059669"},
+  purple:{name:"💜 بنفسجي", nameEn:"💜 Purple",  bg:"#0e0a1e",sidebar:"#150d2a",card:"#1a1035",border:"#2d1b55",text:"#e2e8f0",sub:"#8b7ab8",inp:"#0e0a1e", inpBorder:"#2d1b55",navActive:"#2d1b55",navActiveTxt:"#a78bfa",accent:"#7c3aed"},
+  white: {name:"🤍 أبيض",   nameEn:"🤍 White",   bg:"#ffffff", sidebar:"#f8fafc",card:"#f1f5f9",border:"#e2e8f0",text:"#0f172a",sub:"#475569",inp:"#ffffff", inpBorder:"#cbd5e1",navActive:"#e0f2fe",navActiveTxt:"#0369a1",accent:"#0284c7"},
+};
+const TC = (th) => THEMES[th]||THEMES.dark;
 
 // ════════════════════════════════════════════════════
 //  SHARED UI COMPONENTS
@@ -260,9 +274,14 @@ export default function App() {
   const [lastBk,setLastBk] = useState(null);
   const [mobile,setMobile] = useState(window.innerWidth<768);
   const [storeInfo,setStoreInfo] = useState(()=>LS.get("storeInfo",{phone:"",phone2:"",address:"",addressEn:"",maps:"",siteUrl:""}));
+  const [theme,setTheme] = useState(()=>LS.get("theme","dark"));
   const [logo,setLogo] = useState(()=>LS.get("logo",""));
   const [pwRequests,setPwRequests] = useState(()=>LS.get("pwRequests",[]));
   const [salaryRecords,setSalaryRecords] = useState(()=>LS.get("salaryRecords",[]));
+  const [compatParts,setCompatParts] = useState(()=>LS.get("compatParts",[]));
+  const [purchases,setPurchases] = useState(()=>LS.get("purchases",[]));
+  const [suppliers,setSuppliers] = useState(()=>LS.get("suppliers",[]));
+  const [treasury,setTreasury] = useState(()=>LS.get("treasury",{main:0,daily:0,transactions:[]}));
   const [logoutModal,setLogoutModal] = useState(false);
 
   const t = T[lang]; const isRtl = lang==="ar";
@@ -335,7 +354,12 @@ export default function App() {
   useEffect(()=>LS.set("logo",logo),[logo]);
   useEffect(()=>LS.set("pwRequests",pwRequests),[pwRequests]);
   useEffect(()=>LS.set("salaryRecords",salaryRecords),[salaryRecords]);
+  useEffect(()=>LS.set("compatParts",compatParts),[compatParts]);
+  useEffect(()=>LS.set("purchases",purchases),[purchases]);
+  useEffect(()=>LS.set("suppliers",suppliers),[suppliers]);
+  useEffect(()=>LS.set("treasury",treasury),[treasury]);
   useEffect(()=>LS.set("lang",lang),[lang]);
+  useEffect(()=>LS.set("theme",theme),[theme]);
 
   useEffect(()=>{const i=setInterval(()=>setClock(new Date()),1000);return()=>clearInterval(i);},[]);
   useEffect(()=>{
@@ -375,10 +399,14 @@ export default function App() {
     {id:"dashboard",icon:"📊",label:t.dashboard,ok:true},
     {id:"devices",icon:"📱",label:t.devices,ok:can("devices_view")},
     {id:"hardware",icon:"🔧",label:t.hardware,ok:can("hardware_view")},
+    {id:"compat",icon:"🔍",label:lang==="ar"?"توافق القطع":"Parts Compat.",ok:can("hardware_view")},
     {id:"software",icon:"💾",label:t.software,ok:can("software_view")},
     {id:"invoices",icon:"🧾",label:t.invoices,ok:can("invoices_view")},
+    {id:"purchases",icon:"🛒",label:lang==="ar"?"المشتريات":"Purchases",ok:can("purchases_view")||isAdmin},
+    {id:"suppliers",icon:"🏪",label:lang==="ar"?"الموردون":"Suppliers",ok:isAdmin},
     {id:"reports",icon:"📈",label:t.reports,ok:can("reports_view")},
     {id:"salaries",icon:"💰",label:lang==="ar"?"المرتبات":"Salaries",ok:isAdmin},
+    {id:"treasury",icon:"🏦",label:lang==="ar"?"الخزينة":"Treasury",ok:isAdmin},
     {id:"activity",icon:"🕵️",label:t.activityLog,ok:isAdmin},
     {id:"users",icon:"👥",label:t.users,ok:isAdmin,badge:pwRequests.filter(r=>!r.done).length},
     {id:"store",icon:"🏪",label:lang==="ar"?"إعدادات المتجر":"Store Settings",ok:isAdmin},
@@ -388,7 +416,7 @@ export default function App() {
   const go=(id)=>{setTab(id);setSideOpen(false);};
 
   const SidebarEl = () => (
-    <aside className="sidebar-el" style={{position:"fixed",[isRtl?"right":"left"]:0,top:0,bottom:0,width:215,background:"#0d1421",borderInlineEnd:"1px solid #1e2e44",display:"flex",flexDirection:"column",zIndex:200,transform:mobile?(sideOpen?"translateX(0)":(isRtl?"translateX(110%)":"translateX(-110%)")):"translateX(0)",transition:"transform .25s ease",boxShadow:mobile&&sideOpen?"0 0 60px #000c":"none"}}>
+    <aside className="sidebar-el" style={{position:"fixed",[isRtl?"right":"left"]:0,top:0,bottom:0,width:215,background:th.sidebar,borderInlineEnd:`1px solid ${th.border}`,display:"flex",flexDirection:"column",zIndex:200,transform:mobile?(sideOpen?"translateX(0)":(isRtl?"translateX(110%)":"translateX(-110%)")):"translateX(0)",transition:"transform .25s ease",boxShadow:mobile&&sideOpen?"0 0 60px #000c":"none"}}>
       {/* Logo & Clock */}
       <div style={{padding:"12px 10px 10px",borderBottom:"1px solid #1e2d44"}}>
         <Row s={{gap:9,marginBottom:9}}>
@@ -411,7 +439,7 @@ export default function App() {
       {/* Nav */}
       <nav style={{flex:1,padding:"8px 6px",overflowY:"auto",overflowX:"hidden",scrollbarWidth:"thin",scrollbarColor:"#1e2d44 transparent"}}>
         {NAV.map(n=>(
-          <button key={n.id} onClick={()=>go(n.id)} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"10px 11px",borderRadius:10,border:"none",cursor:"pointer",marginBottom:3,background:tab===n.id?"#1a3055":"transparent",color:tab===n.id?"#60a5fa":"#64748b",fontSize:13,fontWeight:tab===n.id?600:400,textAlign:isRtl?"right":"left",transition:"all .15s",borderInlineStart:tab===n.id?"3px solid #3b82f6":"3px solid transparent"}}>
+          <button key={n.id} onClick={()=>go(n.id)} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"10px 11px",borderRadius:10,border:"none",cursor:"pointer",marginBottom:3,background:tab===n.id?th.navActive:"transparent",color:tab===n.id?th.navActiveTxt:th.sub,fontSize:13,fontWeight:tab===n.id?600:400,textAlign:isRtl?"right":"left",transition:"all .15s",borderInlineStart:tab===n.id?`3px solid ${th.accent}`:"3px solid transparent"}}>
             <span style={{fontSize:16}}>{n.icon}</span>
             <span style={{flex:1}}>{n.label}</span>
             {n.badge>0&&<span style={{background:"#ef4444",color:"#fff",fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:10,minWidth:18,textAlign:"center"}}>{n.badge}</span>}
@@ -431,7 +459,20 @@ export default function App() {
             </button>
           ))}
         </Row>
-        <button onClick={()=>setLogoutModal(true)} style={{width:"100%",padding:"7px",borderRadius:7,border:"1px solid #3f1919",background:"#1c1010",color:"#f87171",fontSize:12,cursor:"pointer"}}>
+        {/* Theme Picker */}
+        <div style={{padding:"10px 12px",borderTop:`1px solid ${th.border}`}}>
+          <div style={{fontSize:10,color:th.sub,marginBottom:7,fontWeight:500}}>{lang==="ar"?"🎨 المظهر":"🎨 Theme"}</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:4}}>
+            {Object.entries(THEMES).map(([key,t])=>(
+              <button key={key} onClick={()=>setTheme(key)} title={lang==="ar"?t.name:t.nameEn}
+                style={{width:"100%",aspectRatio:"1",borderRadius:8,border:theme===key?"2px solid #fff":"2px solid transparent",background:t.bg,cursor:"pointer",transition:"border .15s",fontSize:10,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                {theme===key&&<span style={{color:"#fff",fontSize:8}}>✓</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button onClick={()=>setLogoutModal(true)} style={{margin:"0 10px 10px",padding:"8px",borderRadius:9,border:`1px solid ${th.border}`,background:"transparent",color:"#f87171",fontSize:12,cursor:"pointer"}}>
           🚪 {t.logout}
         </button>
       </div>
@@ -439,9 +480,10 @@ export default function App() {
   );
 
   // ── Logout Modal ─────────────────────────────────
+  const th = TC(theme);
   const ml = isRtl?"marginRight":"marginLeft";
   return (
-    <div dir={isRtl?"rtl":"ltr"} style={{fontFamily:isRtl?"'Tajawal',sans-serif":"'Outfit',sans-serif",minHeight:"100vh",background:"#0f1117",color:"#e2e8f0"}}>
+    <div dir={isRtl?"rtl":"ltr"} style={{fontFamily:isRtl?"'Tajawal',sans-serif":"'Outfit',sans-serif",minHeight:"100vh",background:th.bg,color:th.text}}>
       <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet"/>
       <GS/>
       {mobile&&sideOpen&&<div onClick={()=>setSideOpen(false)} style={{position:"fixed",inset:0,background:"#00000088",zIndex:199}}/>}
@@ -455,10 +497,10 @@ export default function App() {
         buildBackup={buildBackup}
       />}
       {mobile&&(
-        <div className="topbar-el" style={{position:"fixed",top:0,left:0,right:0,height:50,background:"#0a0f1e",borderBottom:"1px solid #1e2d44",display:"flex",alignItems:"center",padding:"0 14px",zIndex:150,gap:12}}>
-          <button onClick={()=>setSideOpen(true)} style={{background:"none",border:"none",color:"#9ca3af",fontSize:22,cursor:"pointer"}}>☰</button>
-          <span style={{fontSize:14,fontWeight:800,color:"#fff"}}>{t.appTitle}</span>
-          <div style={{marginInlineStart:"auto"}}><span style={{fontSize:12,fontFamily:"monospace",color:"#3b82f6"}}>{clock.toTimeString().slice(0,8)}</span></div>
+        <div className="topbar-el" style={{position:"fixed",top:0,left:0,right:0,height:50,background:th.sidebar,borderBottom:`1px solid ${th.border}`,display:"flex",alignItems:"center",padding:"0 14px",zIndex:150,gap:12}}>
+          <button onClick={()=>setSideOpen(true)} style={{background:"none",border:"none",color:th.sub,fontSize:22,cursor:"pointer"}}>☰</button>
+          <span style={{fontSize:14,fontWeight:800,color:th.text}}>{t.appTitle}</span>
+          <div style={{marginInlineStart:"auto"}}><span style={{fontSize:12,fontFamily:"monospace",color:th.accent}}>{clock.toTimeString().slice(0,8)}</span></div>
         </div>
       )}
       {toast&&<div style={{position:"fixed",top:mobile?56:16,left:"50%",transform:"translateX(-50%)",background:toast.type==="success"?"#065f46":"#7f1d1d",color:"#fff",padding:"10px 24px",borderRadius:10,zIndex:9999,fontSize:13,fontWeight:500,boxShadow:"0 8px 32px #0006",whiteSpace:"nowrap"}}>{toast.msg}</div>}
@@ -467,10 +509,14 @@ export default function App() {
           {tab==="dashboard"&&<Dashboard t={t} parts={parts} tools={tools} invoices={invoices} devices={devices} isAdmin={isAdmin} lang={lang} mobile={mobile}/>}
           {tab==="devices"&&<DevicesSection t={t} devices={devices} setDevices={setDevices} users={users} user={user} showToast={showToast} logA={logA} lang={lang} isAdmin={isAdmin} can={can} mobile={mobile} storeInfo={storeInfo} logo={logo}/>}
           {tab==="hardware"&&<HardwareSection t={t} parts={parts} setParts={setParts} isAdmin={isAdmin} showToast={showToast} user={user} lang={lang} logA={logA} can={can} mobile={mobile}/>}
+          {tab==="compat"&&<CompatSection lang={lang} parts={parts} compatParts={compatParts} setCompatParts={setCompatParts} mobile={mobile} showToast={showToast} isAdmin={isAdmin}/> }
+          {tab==="purchases"&&(can("purchases_view")||isAdmin)&&<PurchasesSection lang={lang} purchases={purchases} setPurchases={setPurchases} suppliers={suppliers} setSuppliers={setSuppliers} user={user} isAdmin={isAdmin} mobile={mobile} showToast={showToast} can={can}/>}
+          {tab==="suppliers"&&isAdmin&&<SuppliersSection lang={lang} suppliers={suppliers} setSuppliers={setSuppliers} purchases={purchases} mobile={mobile} showToast={showToast}/>}
           {tab==="software"&&<SoftwareSection t={t} tools={tools} setTools={setTools} isAdmin={isAdmin} showToast={showToast} user={user} lang={lang} logA={logA} can={can} mobile={mobile}/>}
           {tab==="invoices"&&<InvoicesSection t={t} invoices={invoices} setInvoices={setInvoices} parts={parts} setParts={setParts} user={user} showToast={showToast} lang={lang} isAdmin={isAdmin} logA={logA} can={can} mobile={mobile} storeInfo={storeInfo} logo={logo}/>}
           {tab==="reports"&&<ReportsSection t={t} invoices={invoices} parts={parts} isAdmin={isAdmin} lang={lang} mobile={mobile} can={can}/>}
           {tab==="salaries"&&isAdmin&&<SalariesSection lang={lang} users={users} invoices={invoices} salaryRecords={salaryRecords} setSalaryRecords={setSalaryRecords} mobile={mobile} showToast={showToast}/>}
+          {tab==="treasury"&&isAdmin&&<TreasurySection lang={lang} treasury={treasury} setTreasury={setTreasury} invoices={invoices} purchases={purchases} mobile={mobile} showToast={showToast} user={user}/>}
           {tab==="activity"&&isAdmin&&<ActivitySection t={t} log={log} setLog={setLog} users={users} lang={lang} mobile={mobile}/>}
           {tab==="users"&&isAdmin&&<UsersSection t={t} users={users} setUsers={setUsers} showToast={showToast} lang={lang} mobile={mobile} isRtl={isRtl} pwRequests={pwRequests} setPwRequests={setPwRequests} invoices={invoices} devices={devices}/>}
           {tab==="store"&&isAdmin&&<StoreSettings lang={lang} storeInfo={storeInfo} setStoreInfo={setStoreInfo} showToast={showToast} mobile={mobile} logo={logo} setLogo={setLogo}/>}
@@ -1504,32 +1550,36 @@ function InvoicesSection({t,invoices,setInvoices,parts,setParts,user,showToast,l
   const [delConfirm,setDelConfirm]=useState(null);
 
   const addItem=()=>{const p=parts.find(x=>x.id===Number(selPart));if(!p)return;setForm(f=>({...f,items:[...f.items,{partId:p.id,partName:lang==="ar"?p.name:p.nameEn,qty:+qty,price:p.sellPrice,currency:p.currency}]}));setSelPart("");setQty(1);};
-  const total=form.items.reduce((s,i)=>s+i.qty*i.price,0);
+  const subtotal=form.items.reduce((s,i)=>s+i.qty*i.price,0);
+  const discountAmt = form.discountType==="percent" ? subtotal*(Number(form.discount||0)/100) : Number(form.discount||0);
+  const total = subtotal - discountAmt;
 
   const create=()=>{
     if(!form.customerName||form.items.length===0)return;
     const dt=nowDT();
-    const inv={id:genId(),...form,total,technicianId:user.id,technicianName:user.name,technicianNameEn:user.nameEn,date:dt.date,time:dt.time};
+    const inv={id:genId(),...form,subtotal,discountAmt,total,technicianId:user.id,technicianName:user.name,technicianNameEn:user.nameEn,date:dt.date,time:dt.time};
     setInvoices(p=>[...p,inv]);
     form.items.forEach(i=>setParts(p=>p.map(x=>x.id===i.partId?{...x,stock:x.stock-i.qty}:x)));
     showToast(lang==="ar"?"تم إنشاء الفاتورة":"Invoice created");
     logA("invoice","invoices",`${form.customerName} — ${fmtCur(total,"LYD")}`);
-    setForm({customerName:"",customerPhone:"",items:[],currency:"LYD"});setShowF(false);
+    setForm({customerName:"",customerPhone:"",items:[],currency:"LYD",discount:"",discountType:"percent"});setShowF(false);
   };
 
   const startEdit=(inv)=>{
     setEditInv(inv);
-    setForm({customerName:inv.customerName,customerPhone:inv.customerPhone,items:[...inv.items],currency:inv.currency||"LYD"});
+    setForm({customerName:inv.customerName,customerPhone:inv.customerPhone,items:[...inv.items],currency:inv.currency||"LYD",discount:inv.discount||"",discountType:inv.discountType||"percent"});
     setShowF(true);
   };
 
   const saveEdit=()=>{
     if(!form.customerName||form.items.length===0)return;
-    const newTotal=form.items.reduce((s,i)=>s+i.qty*i.price,0);
-    setInvoices(p=>p.map(x=>x.id===editInv.id?{...x,...form,total:newTotal,editedAt:nowDT().iso,editedBy:user.name}:x));
+    const newSubtotal=form.items.reduce((s,i)=>s+i.qty*i.price,0);
+    const newDiscAmt=form.discountType==="percent"?newSubtotal*(Number(form.discount||0)/100):Number(form.discount||0);
+    const newTotal=newSubtotal-newDiscAmt;
+    setInvoices(p=>p.map(x=>x.id===editInv.id?{...x,...form,subtotal:newSubtotal,discountAmt:newDiscAmt,total:newTotal,editedAt:nowDT().iso,editedBy:user.name}:x));
     showToast(lang==="ar"?"تم تعديل الفاتورة":"Invoice updated");
     logA("edit","invoices",lang==="ar"?`تعديل فاتورة #${editInv.id}`:`Edit invoice #${editInv.id}`);
-    setForm({customerName:"",customerPhone:"",items:[],currency:"LYD"});
+    setForm({customerName:"",customerPhone:"",items:[],currency:"LYD",discount:"",discountType:"percent"});
     setShowF(false);setEditInv(null);
   };
 
@@ -1593,7 +1643,36 @@ function InvoicesSection({t,invoices,setInvoices,parts,setParts,user,showToast,l
               </Row>
             </Row>
           ))}
-          {form.items.length>0&&<div style={{textAlign:"right",marginTop:10,fontSize:15,fontWeight:700,color:"#10b981"}}>{t.total}: {fmtCur(total,"LYD")}</div>}
+          {form.items.length>0&&(
+            <div style={{marginTop:10}}>
+              {/* Discount row */}
+              <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}>
+                <span style={{fontSize:12,color:"#64748b",flexShrink:0}}>🏷️ {lang==="ar"?"تخفيض:":"Discount:"}</span>
+                <input type="number" value={form.discount||""} onChange={e=>setForm(p=>({...p,discount:e.target.value}))}
+                  placeholder="0" style={{width:90,padding:"6px 10px",borderRadius:8,border:"1px solid #f59e0b55",background:"#131926",color:"#fbbf24",fontSize:13,outline:"none"}}/>
+                <select value={form.discountType||"percent"} onChange={e=>setForm(p=>({...p,discountType:e.target.value}))}
+                  style={{padding:"6px 10px",borderRadius:8,border:"1px solid #2a3a52",background:"#131926",color:"#e2e8f0",fontSize:12,outline:"none"}}>
+                  <option value="percent">%</option>
+                  <option value="fixed">{lang==="ar"?"د.ل":"LYD"}</option>
+                </select>
+              </div>
+              {/* Totals summary */}
+              <div style={{background:"#0f1520",borderRadius:10,padding:"10px 14px"}}>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#64748b",marginBottom:4}}>
+                  <span>{lang==="ar"?"المجموع الفرعي":"Subtotal"}</span>
+                  <span>{fmtCur(subtotal,"LYD")}</span>
+                </div>
+                {discountAmt>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#fbbf24",marginBottom:4}}>
+                  <span>🏷️ {lang==="ar"?"التخفيض":"Discount"} {form.discountType==="percent"?`(${form.discount}%)`:`(${lang==="ar"?"ثابت":"Fixed"})`}</span>
+                  <span>- {fmtCur(discountAmt,"LYD")}</span>
+                </div>}
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:15,fontWeight:800,color:"#10b981",borderTop:"1px solid #2a3a52",paddingTop:6,marginTop:4}}>
+                  <span>{lang==="ar"?"الإجمالي النهائي":"Final Total"}</span>
+                  <span>{fmtCur(total,"LYD")}</span>
+                </div>
+              </div>
+            </div>
+          )}
         </Card>
         <Row s={{gap:10}}>
           <Btn onClick={editInv?saveEdit:create}>{editInv?(lang==="ar"?"حفظ التعديل":"Save Edit"):t.save}</Btn>
@@ -1816,6 +1895,7 @@ function UsersSection({t,users,setUsers,showToast,lang,mobile,isRtl,pwRequests,s
     {label:lang==="ar"?"💾 السوفتوير":"💾 Software",col:"#8b5cf6",keys:["software_view","software_add","software_edit","software_delete"]},
     {label:lang==="ar"?"📱 الأجهزة":"📱 Devices",col:"#10b981",keys:["devices_view","devices_add","devices_edit"]},
     {label:lang==="ar"?"🧾 فواتير وتقارير":"🧾 Invoices & Reports",col:"#f59e0b",keys:["invoices_view","invoices_add","reports_view"]},
+    {label:lang==="ar"?"🛒 المشتريات":"🛒 Purchases",col:"#f87171",keys:["purchases_view","purchases_add"]},
   ];
 
   const addUser=()=>{
@@ -2265,6 +2345,1119 @@ function TechReportModal({userId,users,invoices,devices,lang,mobile,isRtl,onClos
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════
+//  SUPPLIERS SECTION
+// ════════════════════════════════════════════════════
+function SuppliersSection({lang,suppliers,setSuppliers,purchases,mobile,showToast}) {
+  const isRtl=lang==="ar";
+  const [showForm,setShowForm]=useState(false);
+  const [editId,setEditId]=useState(null);
+  const [search,setSearch]=useState("");
+  const [viewId,setViewId]=useState(null); // supplier detail view
+  const empty={name:"",nameEn:"",phone:"",phone2:"",email:"",address:"",company:"",notes:""};
+  const [form,setForm]=useState(empty);
+  const f=(k,v)=>setForm(p=>({...p,[k]:v}));
+
+  const filtered=suppliers.filter(s=>
+    s.name?.includes(search)||
+    s.nameEn?.toLowerCase().includes(search.toLowerCase())||
+    s.phone?.includes(search)||
+    s.company?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const save=()=>{
+    if(!form.name)return;
+    if(editId){
+      setSuppliers(p=>p.map(x=>x.id===editId?{...x,...form}:x));
+      showToast(lang==="ar"?"تم تحديث المورد":"Supplier updated");
+    } else {
+      setSuppliers(p=>[...p,{id:genId(),...form,addedAt:nowDT().iso}]);
+      showToast(lang==="ar"?"تمت إضافة المورد":"Supplier added");
+    }
+    setForm(empty);setShowForm(false);setEditId(null);
+  };
+
+  const startEdit=(s)=>{setForm({name:s.name||"",nameEn:s.nameEn||"",phone:s.phone||"",phone2:s.phone2||"",email:s.email||"",address:s.address||"",company:s.company||"",notes:s.notes||""});setEditId(s.id);setShowForm(true);};
+  const del=(id)=>{setSuppliers(p=>p.filter(x=>x.id!==id));showToast(lang==="ar"?"تم الحذف":"Deleted");};
+
+  // supplier stats
+  const supStats=(id)=>{
+    const sp=purchases.filter(p=>p.supplierId===id);
+    const total=sp.reduce((s,p)=>s+Number(p.total||0),0);
+    const paid=sp.reduce((s,p)=>s+Number(p.paid||0),0);
+    return {count:sp.length,total,paid,remaining:total-paid};
+  };
+
+  const viewSupplier=viewId?suppliers.find(s=>s.id===viewId):null;
+  const viewPurchases=viewId?purchases.filter(p=>p.supplierId===viewId):[];
+
+  return (
+    <div dir={isRtl?"rtl":"ltr"}>
+      {/* Supplier Detail Modal */}
+      {viewSupplier&&(
+        <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+          <div style={{background:"#0a0f1e",border:"1px solid #1e2e44",borderRadius:20,width:"100%",maxWidth:600,maxHeight:"88vh",overflowY:"auto"}}>
+            <div style={{padding:"20px 24px 16px",borderBottom:"1px solid #1e2e44",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <h3 style={{color:"#fff",fontSize:16,fontWeight:700,margin:0}}>🏪 {viewSupplier.name}</h3>
+                {viewSupplier.company&&<div style={{fontSize:12,color:"#64748b",marginTop:3}}>🏢 {viewSupplier.company}</div>}
+              </div>
+              <button onClick={()=>setViewId(null)} style={{background:"none",border:"none",color:"#6b7280",fontSize:22,cursor:"pointer"}}>✕</button>
+            </div>
+            <div style={{padding:20}}>
+              {/* Contact info */}
+              <div style={{background:"#151e2d",borderRadius:14,padding:16,marginBottom:16,display:"grid",gridTemplateColumns:mobile?"1fr":"1fr 1fr",gap:10}}>
+                {[
+                  {icon:"📞",label:lang==="ar"?"الهاتف الأول":"Phone 1",val:viewSupplier.phone},
+                  {icon:"📞",label:lang==="ar"?"الهاتف الثاني":"Phone 2",val:viewSupplier.phone2},
+                  {icon:"📧",label:"Email",val:viewSupplier.email},
+                  {icon:"📍",label:lang==="ar"?"العنوان":"Address",val:viewSupplier.address},
+                ].filter(i=>i.val).map((item,i)=>(
+                  <div key={i} style={{background:"#0f1520",borderRadius:9,padding:"10px 12px"}}>
+                    <div style={{fontSize:10,color:"#64748b",marginBottom:3}}>{item.icon} {item.label}</div>
+                    <div style={{fontSize:13,color:"#e2e8f0",fontWeight:500}}>{item.val}</div>
+                  </div>
+                ))}
+              </div>
+              {/* Stats */}
+              {(()=>{const st=supStats(viewSupplier.id);return(
+                <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:16}}>
+                  {[
+                    {label:lang==="ar"?"فواتير":"Invoices",val:st.count,col:"#a78bfa"},
+                    {label:lang==="ar"?"الإجمالي":"Total",val:st.total.toFixed(2),col:"#3b82f6"},
+                    {label:lang==="ar"?"المدفوع":"Paid",val:st.paid.toFixed(2),col:"#10b981"},
+                    {label:lang==="ar"?"المتبقي":"Remaining",val:st.remaining.toFixed(2),col:st.remaining>0?"#f87171":"#34d399"},
+                  ].map((c,i)=>(
+                    <div key={i} style={{background:"#0f1520",borderRadius:10,padding:"10px 8px",textAlign:"center"}}>
+                      <div style={{fontSize:14,fontWeight:800,color:c.col}}>{c.val}</div>
+                      <div style={{fontSize:10,color:"#64748b",marginTop:3}}>{c.label}</div>
+                    </div>
+                  ))}
+                </div>
+              );})()}
+              {/* Purchase history */}
+              {viewPurchases.length>0&&(
+                <div>
+                  <div style={{fontSize:13,fontWeight:700,color:"#94a3b8",marginBottom:10}}>📋 {lang==="ar"?"سجل المشتريات":"Purchase History"}</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    {[...viewPurchases].reverse().map(p=>(
+                      <div key={p.id} style={{background:"#151e2d",borderRadius:10,padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+                        <div>
+                          <div style={{fontSize:12,color:"#e2e8f0"}}>{p.items||lang==="ar"?"—":"—"}</div>
+                          <div style={{fontSize:11,color:"#64748b"}}>{p.date}</div>
+                        </div>
+                        <div style={{textAlign:"end"}}>
+                          <div style={{fontSize:13,fontWeight:700,color:"#3b82f6"}}>{fmtCur(p.total,p.currency)}</div>
+                          <div style={{fontSize:11,color:Number(p.total)-Number(p.paid||0)>0?"#f87171":"#34d399"}}>
+                            {lang==="ar"?"متبقي":"Rem."}: {fmtCur(Number(p.total)-Number(p.paid||0),p.currency)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {viewSupplier.notes&&<div style={{marginTop:12,background:"#151e2d",borderRadius:10,padding:"10px 14px",fontSize:12,color:"#64748b"}}>💬 {viewSupplier.notes}</div>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
+      <PH title={`🏪 ${lang==="ar"?"الموردون":"Suppliers"}`} action={
+        <Btn onClick={()=>{setShowForm(!showForm);setEditId(null);setForm(empty);}}>
+          + {lang==="ar"?"إضافة مورد":"Add Supplier"}
+        </Btn>
+      }/>
+
+      {/* Summary */}
+      <div style={{display:"grid",gridTemplateColumns:mobile?"1fr 1fr":"repeat(3,1fr)",gap:10,marginBottom:16}}>
+        {[
+          {icon:"🏪",label:lang==="ar"?"إجمالي الموردين":"Total Suppliers",val:suppliers.length,col:"#3b82f6"},
+          {icon:"🛒",label:lang==="ar"?"إجمالي الفواتير":"Total Invoices",val:purchases.length,col:"#a78bfa"},
+          {icon:"⚠️",label:lang==="ar"?"موردون لديهم ديون":"Suppliers with Debt",val:suppliers.filter(s=>{const st=supStats(s.id);return st.remaining>0;}).length,col:"#f87171"},
+        ].map((c,i)=>(
+          <div key={i} style={{background:"#151e2d",border:`1px solid ${c.col}33`,borderRadius:14,padding:14,borderTop:`3px solid ${c.col}`,textAlign:"center"}}>
+            <div style={{fontSize:24}}>{c.icon}</div>
+            <div style={{fontSize:22,fontWeight:800,color:c.col,marginTop:6}}>{c.val}</div>
+            <div style={{fontSize:11,color:"#64748b",marginTop:3}}>{c.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Add/Edit Form */}
+      {showForm&&(
+        <Card s={{marginBottom:16}}>
+          <h3 style={{fontSize:14,fontWeight:700,color:"#e2e8f0",marginBottom:14}}>
+            {editId?(lang==="ar"?"✏️ تعديل المورد":"✏️ Edit Supplier"):(lang==="ar"?"➕ إضافة مورد جديد":"➕ Add New Supplier")}
+          </h3>
+          <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}>
+            <FF label={`🏪 ${lang==="ar"?"اسم المورد (عربي)*":"Supplier Name (Arabic)*"}`}>
+              <input value={form.name} onChange={e=>f("name",e.target.value)} placeholder={lang==="ar"?"اسم المورد...":"Supplier name..."} style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#cbd5e1",fontSize:13,outline:"none"}}/>
+            </FF>
+            <FF label={`🏪 ${lang==="ar"?"اسم المورد (إنجليزي)":"Supplier Name (English)"}`}>
+              <input value={form.nameEn} onChange={e=>f("nameEn",e.target.value)} placeholder="Supplier name..." style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#cbd5e1",fontSize:13,outline:"none"}}/>
+            </FF>
+            <FF label={`🏢 ${lang==="ar"?"اسم الشركة":"Company Name"}`}>
+              <input value={form.company} onChange={e=>f("company",e.target.value)} placeholder={lang==="ar"?"اسم الشركة...":"Company name..."} style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#cbd5e1",fontSize:13,outline:"none"}}/>
+            </FF>
+            <FF label={`📍 ${lang==="ar"?"العنوان":"Address"}`}>
+              <input value={form.address} onChange={e=>f("address",e.target.value)} placeholder={lang==="ar"?"عنوان الشركة...":"Company address..."} style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#cbd5e1",fontSize:13,outline:"none"}}/>
+            </FF>
+            <FF label={`📞 ${lang==="ar"?"رقم الهاتف الأول":"Phone Number 1"}`}>
+              <input value={form.phone} onChange={e=>f("phone",e.target.value)} placeholder="0911234567" style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#cbd5e1",fontSize:13,outline:"none"}}/>
+            </FF>
+            <FF label={`📞 ${lang==="ar"?"رقم الهاتف الثاني":"Phone Number 2"}`}>
+              <input value={form.phone2} onChange={e=>f("phone2",e.target.value)} placeholder="0921234567" style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#cbd5e1",fontSize:13,outline:"none"}}/>
+            </FF>
+            <FF label={`📧 ${lang==="ar"?"البريد الإلكتروني":"Email"}`}>
+              <input value={form.email} onChange={e=>f("email",e.target.value)} placeholder="supplier@email.com" style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#cbd5e1",fontSize:13,outline:"none"}}/>
+            </FF>
+            <FF label={`💬 ${lang==="ar"?"ملاحظات":"Notes"}`}>
+              <input value={form.notes} onChange={e=>f("notes",e.target.value)} placeholder={lang==="ar"?"ملاحظات...":"Notes..."} style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#cbd5e1",fontSize:13,outline:"none"}}/>
+            </FF>
+          </div>
+          <Row s={{gap:10}}>
+            <Btn onClick={save} col="#065f46">💾 {lang==="ar"?"حفظ":"Save"}</Btn>
+            <OBtn onClick={()=>{setShowForm(false);setEditId(null);}}>✕ {lang==="ar"?"إلغاء":"Cancel"}</OBtn>
+          </Row>
+        </Card>
+      )}
+
+      {/* Search */}
+      <Row s={{gap:10,marginBottom:14,flexWrap:"wrap"}}>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder={lang==="ar"?"بحث بالاسم أو الهاتف أو الشركة...":"Search by name, phone or company..."} style={{flex:1,maxWidth:320,padding:"9px 14px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#cbd5e1",fontSize:13,outline:"none"}}/>
+        <span style={{fontSize:12,color:"#64748b",padding:"9px 0"}}>{filtered.length} {lang==="ar"?"مورد":"suppliers"}</span>
+      </Row>
+
+      {/* Suppliers Grid */}
+      {filtered.length===0?(
+        <Card s={{textAlign:"center",padding:40,color:"#64748b"}}>
+          <div style={{fontSize:48,marginBottom:12}}>🏪</div>
+          <div>{lang==="ar"?"لا يوجد موردون بعد":"No suppliers yet"}</div>
+        </Card>
+      ):(
+        <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"repeat(auto-fill,minmax(290px,1fr))",gap:14}}>
+          {filtered.map(s=>{
+            const st=supStats(s.id);
+            return (
+              <div key={s.id} className="card-ani" style={{background:"#151e2d",border:"1px solid #1e2e44",borderRadius:18,padding:20,position:"relative",overflow:"hidden",cursor:"pointer"}} onClick={()=>setViewId(s.id)}>
+                <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:st.remaining>0?"linear-gradient(90deg,#f59e0b,#ef4444)":"linear-gradient(90deg,#10b981,#34d399)"}}/>
+                <Row s={{justifyContent:"space-between",marginBottom:14}}>
+                  <Row s={{gap:12}}>
+                    <div style={{width:48,height:48,borderRadius:14,background:"linear-gradient(135deg,#78350f,#f59e0b)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>🏪</div>
+                    <div>
+                      <div style={{fontSize:14,fontWeight:700,color:"#e2e8f0"}}>{s.name}</div>
+                      {s.company&&<div style={{fontSize:11,color:"#a78bfa"}}>🏢 {s.company}</div>}
+                    </div>
+                  </Row>
+                  <Row s={{gap:5}} onClick={e=>e.stopPropagation()}>
+                    <OBtn onClick={()=>startEdit(s)} sm tc="#60a5fa" col="#1a3055">✏️</OBtn>
+                    <OBtn onClick={()=>del(s.id)} sm tc="#f87171" col="#3f1919">🗑</OBtn>
+                  </Row>
+                </Row>
+
+                {/* Contact */}
+                <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:14}}>
+                  {s.phone&&<div style={{fontSize:12,color:"#94a3b8"}}>📞 {s.phone}{s.phone2&&` / ${s.phone2}`}</div>}
+                  {s.address&&<div style={{fontSize:12,color:"#94a3b8"}}>📍 {s.address}</div>}
+                  {s.email&&<div style={{fontSize:12,color:"#60a5fa"}}>📧 {s.email}</div>}
+                </div>
+
+                {/* Stats */}
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7}}>
+                  <div style={{background:"#0f1520",borderRadius:9,padding:"8px",textAlign:"center"}}>
+                    <div style={{fontSize:13,fontWeight:700,color:"#a78bfa"}}>{st.count}</div>
+                    <div style={{fontSize:9,color:"#64748b"}}>{lang==="ar"?"فاتورة":"Invoices"}</div>
+                  </div>
+                  <div style={{background:"#0f1520",borderRadius:9,padding:"8px",textAlign:"center"}}>
+                    <div style={{fontSize:13,fontWeight:700,color:"#10b981"}}>{st.paid.toFixed(0)}</div>
+                    <div style={{fontSize:9,color:"#64748b"}}>{lang==="ar"?"مدفوع":"Paid"}</div>
+                  </div>
+                  <div style={{background:"#0f1520",borderRadius:9,padding:"8px",textAlign:"center"}}>
+                    <div style={{fontSize:13,fontWeight:700,color:st.remaining>0?"#f87171":"#34d399"}}>{st.remaining.toFixed(0)}</div>
+                    <div style={{fontSize:9,color:"#64748b"}}>{lang==="ar"?"متبقي":"Remaining"}</div>
+                  </div>
+                </div>
+
+                {s.notes&&<div style={{marginTop:10,fontSize:11,color:"#64748b",background:"#0f1520",borderRadius:8,padding:"6px 10px"}}>💬 {s.notes}</div>}
+                <div style={{marginTop:10,fontSize:10,color:"#374151",textAlign:"center"}}>{lang==="ar"?"اضغط لعرض التفاصيل":"Tap to view details"} 👆</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════
+//  PURCHASES SECTION
+// ════════════════════════════════════════════════════
+function PurchasesSection({lang,purchases,setPurchases,suppliers,setSuppliers,user,isAdmin,mobile,showToast,can}) {
+  const isRtl=lang==="ar";
+  const [activeTab,setActiveTab]=useState("purchases"); // purchases | suppliers
+  const [showForm,setShowForm]=useState(false);
+  const [showSupForm,setShowSupForm]=useState(false);
+  const [editId,setEditId]=useState(null);
+  const [editSupId,setEditSupId]=useState(null);
+  const [filterSup,setFilterSup]=useState("all");
+  const [filterMonth,setFilterMonth]=useState("");
+  const [delConfirm,setDelConfirm]=useState(null);
+
+  const emptyPurch={supplierId:"",items:"",total:"",paid:"",discount:"",discountType:"percent",currency:"LYD",notes:"",date:today()};
+  const emptySup={name:"",phone:"",address:"",notes:""};
+  const [form,setForm]=useState(emptyPurch);
+  const [supForm,setSupForm]=useState(emptySup);
+  const f=(k,v)=>setForm(p=>({...p,[k]:v}));
+  const fs=(k,v)=>setSupForm(p=>({...p,[k]:v}));
+
+  // Calculations
+  const getSupplier=(id)=>suppliers.find(s=>s.id===id)||{name:"—",nameEn:"—"};
+  const debt=(p)=>Number(p.total||0)-Number(p.paid||0); // مدين = متبقي على المحل
+  const credit=(p)=>Number(p.paid||0); // دائن = ما دُفع
+
+  // Filter
+  const filteredP=purchases.filter(p=>{
+    if(filterSup!=="all"&&String(p.supplierId)!==filterSup)return false;
+    if(filterMonth&&!p.date.startsWith(filterMonth))return false;
+    return true;
+  });
+
+  // Totals
+  const totalDebt=filteredP.reduce((s,p)=>s+debt(p),0);
+  const totalCredit=filteredP.reduce((s,p)=>s+credit(p),0);
+  const totalAll=filteredP.reduce((s,p)=>s+Number(p.total||0),0);
+
+  // Save purchase
+  const savePurch=()=>{
+    if(!form.total)return;
+    const dt=nowDT();
+    if(editId){
+      setPurchases(p=>p.map(x=>x.id===editId?{...x,...form,total:Number(form.total),paid:Number(form.paid||0),editedAt:dt.iso,editedBy:user.name}:x));
+      showToast(lang==="ar"?"تم التحديث":"Updated");
+    } else {
+      setPurchases(p=>[...p,{id:genId(),...form,total:Number(form.total),paid:Number(form.paid||0),addedBy:user.id,addedByName:user.name,createdAt:dt.iso,date:form.date||dt.date}]);
+      showToast(lang==="ar"?"تمت الإضافة":"Added");
+    }
+    setForm(emptyPurch);setShowForm(false);setEditId(null);
+  };
+
+  // Save supplier
+  const saveSup=()=>{
+    if(!supForm.name)return;
+    if(editSupId){
+      setSuppliers(p=>p.map(x=>x.id===editSupId?{...x,...supForm}:x));
+      showToast(lang==="ar"?"تم تحديث المورد":"Supplier updated");
+    } else {
+      setSuppliers(p=>[...p,{id:genId(),...supForm}]);
+      showToast(lang==="ar"?"تمت إضافة المورد":"Supplier added");
+    }
+    setSupForm(emptySup);setShowSupForm(false);setEditSupId(null);
+  };
+
+  const startEditP=(p)=>{setForm({supplierId:p.supplierId,items:p.items||"",total:p.total,paid:p.paid||0,currency:p.currency||"LYD",notes:p.notes||"",date:p.date});setEditId(p.id);setShowForm(true);};
+  const startEditS=(s)=>{setSupForm({name:s.name,phone:s.phone||"",address:s.address||"",notes:s.notes||""});setEditSupId(s.id);setShowSupForm(true);};
+  const delPurch=(id)=>{setPurchases(p=>p.filter(x=>x.id!==id));setDelConfirm(null);showToast(lang==="ar"?"تم الحذف":"Deleted");};
+  const delSup=(id)=>{setSuppliers(p=>p.filter(x=>x.id!==id));showToast(lang==="ar"?"تم حذف المورد":"Supplier deleted");};
+
+  // Export CSV
+  const exportCSV=()=>{
+    const rows=[
+      ["#",lang==="ar"?"المورد":"Supplier",lang==="ar"?"الأصناف":"Items",lang==="ar"?"الإجمالي":"Total",lang==="ar"?"المدفوع":"Paid",lang==="ar"?"المتبقي":"Remaining",lang==="ar"?"التاريخ":"Date"],
+      ...filteredP.map(p=>[p.id,getSupplier(p.supplierId).name,p.items||"",p.total,p.paid||0,debt(p),p.date])
+    ];
+    const csv=rows.map(r=>r.join(",")).join("\n");
+    const b=new Blob(["\uFEFF"+csv],{type:"text/csv"});
+    const url=URL.createObjectURL(b);
+    const a=document.createElement("a");
+    a.href=url;a.download=`purchases-${today()}.csv`;a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div dir={isRtl?"rtl":"ltr"}>
+      {/* Header */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18,flexWrap:"wrap",gap:10}}>
+        <h2 style={{fontSize:19,fontWeight:700,color:"#e2e8f0",margin:0}}>🛒 {lang==="ar"?"المشتريات":"Purchases"}</h2>
+        <Row s={{gap:8,flexWrap:"wrap"}}>
+          <button onClick={exportCSV} style={{padding:"8px 14px",borderRadius:10,border:"none",background:"#065f46",color:"#34d399",fontSize:12,fontWeight:600,cursor:"pointer"}}>
+            📤 {lang==="ar"?"تصدير":"Export"}
+          </button>
+          {(isAdmin||can("purchases_add"))&&<Btn onClick={()=>{setShowForm(!showForm);setEditId(null);setForm(emptyPurch);}}>
+            + {lang==="ar"?"فاتورة مشتريات":"New Purchase"}
+          </Btn>}
+        </Row>
+      </div>
+
+      {/* Delete Confirm */}
+      {delConfirm&&(
+        <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+          <div style={{background:"#0a0f1e",border:"1px solid #7f1d1d44",borderRadius:16,padding:24,maxWidth:360,width:"100%",textAlign:"center"}}>
+            <div style={{fontSize:36,marginBottom:10}}>⚠️</div>
+            <h3 style={{color:"#fbbf24",fontSize:15,marginBottom:12}}>{lang==="ar"?"تأكيد الحذف":"Confirm Delete"}</h3>
+            <Row s={{gap:10,justifyContent:"center"}}>
+              <Btn onClick={()=>delPurch(delConfirm)} col="#7f1d1d" s={{flex:1}}>{lang==="ar"?"حذف":"Delete"}</Btn>
+              <OBtn onClick={()=>setDelConfirm(null)} s={{flex:1}}>{lang==="ar"?"إلغاء":"Cancel"}</OBtn>
+            </Row>
+          </div>
+        </div>
+      )}
+
+      {/* Tabs */}
+      <Row s={{gap:8,marginBottom:16}}>
+        {[{id:"purchases",label:lang==="ar"?"📋 الفواتير":"📋 Invoices"},{id:"suppliers",label:lang==="ar"?"🏪 الموردون":"🏪 Suppliers"}].map(tb=>(
+          <button key={tb.id} onClick={()=>setActiveTab(tb.id)} style={{padding:"8px 20px",borderRadius:24,border:"none",cursor:"pointer",fontSize:13,fontWeight:activeTab===tb.id?700:400,background:activeTab===tb.id?"linear-gradient(135deg,#2563eb,#1d4ed8)":"#151e2d",color:activeTab===tb.id?"#fff":"#64748b"}}>
+            {tb.label} {tb.id==="purchases"?`(${purchases.length})`:`(${suppliers.length})`}
+          </button>
+        ))}
+      </Row>
+
+      {activeTab==="purchases"&&(
+        <>
+          {/* Summary cards */}
+          <div style={{display:"grid",gridTemplateColumns:mobile?"1fr 1fr":"repeat(4,1fr)",gap:10,marginBottom:16}}>
+            {[
+              {label:lang==="ar"?"إجمالي المشتريات":"Total Purchases",val:totalAll.toFixed(2),col:"#3b82f6",icon:"🛒"},
+              {label:lang==="ar"?"إجمالي المدفوع (دائن)":"Total Paid (Credit)",val:totalCredit.toFixed(2),col:"#10b981",icon:"✅"},
+              {label:lang==="ar"?"إجمالي المتبقي (مدين)":"Total Remaining (Debit)",val:totalDebt.toFixed(2),col:"#f87171",icon:"⚠️"},
+              {label:lang==="ar"?"عدد الفواتير":"Invoices Count",val:filteredP.length,col:"#a78bfa",icon:"📋"},
+            ].map((c,i)=>(
+              <div key={i} style={{background:"#151e2d",border:`1px solid ${c.col}33`,borderRadius:14,padding:14,borderTop:`3px solid ${c.col}`}}>
+                <div style={{fontSize:20,marginBottom:6}}>{c.icon}</div>
+                <div style={{fontSize:16,fontWeight:800,color:c.col}}>{c.val}</div>
+                <div style={{fontSize:10,color:"#64748b",marginTop:3}}>{c.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Filters */}
+          <Row s={{gap:10,marginBottom:14,flexWrap:"wrap"}}>
+            <select value={filterSup} onChange={e=>setFilterSup(e.target.value)} style={{padding:"8px 12px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#e2e8f0",fontSize:13,outline:"none"}}>
+              <option value="all">{lang==="ar"?"جميع الموردين":"All Suppliers"}</option>
+              {suppliers.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+            <input type="month" value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} style={{padding:"8px 12px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#e2e8f0",fontSize:13,outline:"none"}}/>
+            {filterMonth&&<OBtn onClick={()=>setFilterMonth("")} sm>✕</OBtn>}
+          </Row>
+
+          {/* Add/Edit Form */}
+          {showForm&&(
+            <Card s={{marginBottom:14}}>
+              <h3 style={{fontSize:14,fontWeight:700,color:"#e2e8f0",marginBottom:14}}>
+                {editId?(lang==="ar"?"✏️ تعديل الفاتورة":"✏️ Edit Invoice"):(lang==="ar"?"➕ فاتورة مشتريات جديدة":"➕ New Purchase Invoice")}
+              </h3>
+              <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}>
+                <FF label={`🏪 ${lang==="ar"?"المورد":"Supplier"}`}>
+                  <select value={form.supplierId} onChange={e=>f("supplierId",Number(e.target.value))} style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#cbd5e1",fontSize:13,outline:"none"}}>
+                    <option value="">{lang==="ar"?"-- اختر مورد --":"-- Select Supplier --"}</option>
+                    {suppliers.map(s=><option key={s.id} value={s.id}>{s.name} {s.phone?`(${s.phone})`:""}</option>)}
+                  </select>
+                </FF>
+                <FF label={`📅 ${lang==="ar"?"التاريخ":"Date"}`}>
+                  <input type="date" value={form.date} onChange={e=>f("date",e.target.value)} style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#cbd5e1",fontSize:13,outline:"none"}}/>
+                </FF>
+                <FF label={`📦 ${lang==="ar"?"الأصناف/البضاعة":"Items/Goods"}`}>
+                  <input value={form.items} onChange={e=>f("items",e.target.value)} placeholder={lang==="ar"?"اسم الأصناف...":"Item names..."} style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#cbd5e1",fontSize:13,outline:"none"}}/>
+                </FF>
+                <FF label={`💱 ${lang==="ar"?"العملة":"Currency"}`}>
+                  <select value={form.currency} onChange={e=>f("currency",e.target.value)} style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#cbd5e1",fontSize:13,outline:"none"}}>
+                    <option value="LYD">{lang==="ar"?"دينار ليبي":"Libyan Dinar"}</option>
+                    <option value="USD">Dollar USD</option>
+                  </select>
+                </FF>
+                <FF label={`💰 ${lang==="ar"?"الإجمالي (مدين)":"Total (Debit)"}`}>
+                  <input type="number" value={form.total} onChange={e=>f("total",e.target.value)} placeholder="0.00" style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #f8717144",background:"#131926",color:"#f87171",fontSize:13,outline:"none",fontWeight:700}}/>
+                </FF>
+                <FF label={`✅ ${lang==="ar"?"المدفوع (دائن)":"Paid (Credit)"}`}>
+                  <input type="number" value={form.paid} onChange={e=>f("paid",e.target.value)} placeholder="0.00" style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #10b98144",background:"#131926",color:"#10b981",fontSize:13,outline:"none",fontWeight:700}}/>
+                </FF>
+              </div>
+              {/* Live calc with discount */}
+              {form.total&&(
+                <div style={{background:"#0f1520",borderRadius:10,padding:12,marginBottom:12}}>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+                    <FF label={`🏷️ ${lang==="ar"?"تخفيض":"Discount"}`}>
+                      <div style={{display:"flex",gap:6}}>
+                        <input type="number" value={form.discount||""} onChange={e=>f("discount",e.target.value)}
+                          placeholder="0" style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1px solid #f59e0b55",background:"#131926",color:"#fbbf24",fontSize:13,outline:"none"}}/>
+                        <select value={form.discountType||"percent"} onChange={e=>f("discountType",e.target.value)}
+                          style={{padding:"7px 8px",borderRadius:8,border:"1px solid #2a3a52",background:"#131926",color:"#e2e8f0",fontSize:12,outline:"none"}}>
+                          <option value="percent">%</option>
+                          <option value="fixed">{lang==="ar"?"د.ل":"LYD"}</option>
+                        </select>
+                      </div>
+                    </FF>
+                  </div>
+                  {(()=>{
+                    const raw=Number(form.total||0);
+                    const disc=form.discountType==="percent"?raw*(Number(form.discount||0)/100):Number(form.discount||0);
+                    const net=raw-disc;
+                    const rem=net-Number(form.paid||0);
+                    return (
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,textAlign:"center"}}>
+                        {[
+                          {label:lang==="ar"?"الإجمالي":"Total",val:raw.toFixed(2),col:"#3b82f6"},
+                          {label:lang==="ar"?"تخفيض":"Discount",val:`-${disc.toFixed(2)}`,col:"#fbbf24"},
+                          {label:lang==="ar"?"بعد الخصم":"After Disc.",val:net.toFixed(2),col:"#a78bfa"},
+                          {label:lang==="ar"?"المتبقي (مدين)":"Remaining",val:rem.toFixed(2),col:rem>0?"#f87171":"#34d399"},
+                        ].map((c,i)=>(
+                          <div key={i} style={{background:"#151e2d",borderRadius:8,padding:"8px 4px"}}>
+                            <div style={{fontSize:13,fontWeight:700,color:c.col}}>{c.val}</div>
+                            <div style={{fontSize:9,color:"#64748b",marginTop:2}}>{c.label}</div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+              <FF label={`💬 ${lang==="ar"?"ملاحظات":"Notes"}`}>
+                <input value={form.notes} onChange={e=>f("notes",e.target.value)} placeholder={lang==="ar"?"ملاحظات...":"Notes..."} style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#cbd5e1",fontSize:13,outline:"none",marginTop:8}}/>
+              </FF>
+              <Row s={{gap:10,marginTop:12}}>
+                <Btn onClick={savePurch} col="#065f46">💾 {lang==="ar"?"حفظ":"Save"}</Btn>
+                <OBtn onClick={()=>{setShowForm(false);setEditId(null);}}>✕ {lang==="ar"?"إلغاء":"Cancel"}</OBtn>
+              </Row>
+            </Card>
+          )}
+
+          {/* Purchases table */}
+          {filteredP.length===0?(
+            <Card s={{textAlign:"center",padding:40,color:"#64748b"}}>
+              <div style={{fontSize:44,marginBottom:10}}>🛒</div>
+              <div>{lang==="ar"?"لا توجد فواتير مشتريات بعد":"No purchase invoices yet"}</div>
+            </Card>
+          ):(
+            <div className="sx">
+              <table style={{minWidth:650,width:"100%",borderCollapse:"collapse"}}>
+                <thead><tr style={{background:"#0f1520"}}>
+                  {["#",lang==="ar"?"المورد":"Supplier",lang==="ar"?"الأصناف":"Items",lang==="ar"?"الإجمالي":"Total",lang==="ar"?"دائن (مدفوع)":"Credit (Paid)",lang==="ar"?"مدين (متبقي)":"Debit (Remaining)",lang==="ar"?"التاريخ":"Date",""].map((h,i)=>(
+                    <th key={i} style={{padding:"10px 12px",fontSize:11,color:"#64748b",fontWeight:500,textAlign:"inherit",whiteSpace:"nowrap"}}>{h}</th>
+                  ))}
+                </tr></thead>
+                <tbody>
+                  {[...filteredP].reverse().map(p=>{
+                    const sup=getSupplier(p.supplierId);
+                    const remaining=debt(p);
+                    return (
+                      <tr key={p.id} style={{borderTop:"1px solid #1e2e4422"}}>
+                        <td style={{padding:"10px 12px",fontSize:12,color:"#60a5fa"}}>#{p.id}</td>
+                        <td style={{padding:"10px 12px"}}>
+                          <div style={{fontSize:13,fontWeight:600,color:"#e2e8f0"}}>{sup.name||lang==="ar"?"غير محدد":"Unknown"}</div>
+                          {sup.phone&&<div style={{fontSize:11,color:"#64748b"}}>📞 {sup.phone}</div>}
+                        </td>
+                        <td style={{padding:"10px 12px",fontSize:12,color:"#94a3b8",maxWidth:160}}>{p.items||"—"}</td>
+                        <td style={{padding:"10px 12px",fontSize:13,fontWeight:700,color:"#3b82f6"}}>{fmtCur(p.total,p.currency)}</td>
+                        <td style={{padding:"10px 12px",fontSize:13,fontWeight:700,color:"#10b981"}}>{fmtCur(p.paid||0,p.currency)}</td>
+                        <td style={{padding:"10px 12px"}}>
+                          <span style={{fontSize:13,fontWeight:700,color:remaining>0?"#f87171":"#34d399"}}>
+                            {remaining>0?"⚠️":"✅"} {fmtCur(remaining,p.currency)}
+                          </span>
+                        </td>
+                        <td style={{padding:"10px 12px",fontSize:11,color:"#64748b",whiteSpace:"nowrap"}}>{p.date}</td>
+                        <td style={{padding:"10px 12px"}}>
+                          <Row s={{gap:5}}>
+                            {(isAdmin||can("purchases_add"))&&<OBtn onClick={()=>startEditP(p)} sm tc="#60a5fa" col="#1a3055">✏️</OBtn>}
+                            {isAdmin&&<OBtn onClick={()=>setDelConfirm(p.id)} sm tc="#f87171" col="#3f1919">🗑</OBtn>}
+                          </Row>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                {/* Totals row */}
+                <tfoot>
+                  <tr style={{background:"#0f1520",borderTop:"2px solid #2a3a52"}}>
+                    <td colSpan={3} style={{padding:"10px 12px",fontSize:12,fontWeight:700,color:"#94a3b8"}}>{lang==="ar"?"الإجمالي":"Total"}</td>
+                    <td style={{padding:"10px 12px",fontSize:14,fontWeight:800,color:"#3b82f6"}}>{totalAll.toFixed(2)}</td>
+                    <td style={{padding:"10px 12px",fontSize:14,fontWeight:800,color:"#10b981"}}>{totalCredit.toFixed(2)}</td>
+                    <td style={{padding:"10px 12px",fontSize:14,fontWeight:800,color:"#f87171"}}>{totalDebt.toFixed(2)}</td>
+                    <td colSpan={2}></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+
+      {activeTab==="suppliers"&&(
+        <>
+          <div style={{marginBottom:14}}>
+            <Btn onClick={()=>{setShowSupForm(!showSupForm);setEditSupId(null);setSupForm(emptySup);}}>
+              + {lang==="ar"?"إضافة مورد":"Add Supplier"}
+            </Btn>
+          </div>
+
+          {showSupForm&&(
+            <Card s={{marginBottom:14}}>
+              <h3 style={{fontSize:14,fontWeight:700,color:"#e2e8f0",marginBottom:14}}>
+                {editSupId?(lang==="ar"?"✏️ تعديل المورد":"✏️ Edit Supplier"):(lang==="ar"?"➕ إضافة مورد":"➕ Add Supplier")}
+              </h3>
+              <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}>
+                <FF label={`🏪 ${lang==="ar"?"اسم المورد":"Supplier Name"}`}>
+                  <input value={supForm.name} onChange={e=>fs("name",e.target.value)} placeholder={lang==="ar"?"اسم المورد...":"Supplier name..."} style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#cbd5e1",fontSize:13,outline:"none"}}/>
+                </FF>
+                <FF label={`📞 ${lang==="ar"?"رقم الهاتف":"Phone Number"}`}>
+                  <input value={supForm.phone} onChange={e=>fs("phone",e.target.value)} placeholder="0911234567" style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#cbd5e1",fontSize:13,outline:"none"}}/>
+                </FF>
+                <FF label={`📍 ${lang==="ar"?"العنوان":"Address"}`}>
+                  <input value={supForm.address} onChange={e=>fs("address",e.target.value)} placeholder={lang==="ar"?"العنوان...":"Address..."} style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#cbd5e1",fontSize:13,outline:"none"}}/>
+                </FF>
+                <FF label={`💬 ${lang==="ar"?"ملاحظات":"Notes"}`}>
+                  <input value={supForm.notes} onChange={e=>fs("notes",e.target.value)} placeholder={lang==="ar"?"ملاحظات...":"Notes..."} style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#cbd5e1",fontSize:13,outline:"none"}}/>
+                </FF>
+              </div>
+              <Row s={{gap:10}}>
+                <Btn onClick={saveSup} col="#065f46">💾 {lang==="ar"?"حفظ":"Save"}</Btn>
+                <OBtn onClick={()=>{setShowSupForm(false);setEditSupId(null);}}>✕ {lang==="ar"?"إلغاء":"Cancel"}</OBtn>
+              </Row>
+            </Card>
+          )}
+
+          {suppliers.length===0?(
+            <Card s={{textAlign:"center",padding:40,color:"#64748b"}}>
+              <div style={{fontSize:44,marginBottom:10}}>🏪</div>
+              <div>{lang==="ar"?"لا يوجد موردون بعد":"No suppliers yet"}</div>
+            </Card>
+          ):(
+            <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
+              {suppliers.map(s=>{
+                const supPurchases=purchases.filter(p=>p.supplierId===s.id);
+                const supTotal=supPurchases.reduce((t,p)=>t+Number(p.total||0),0);
+                const supDebt=supPurchases.reduce((t,p)=>t+debt(p),0);
+                return (
+                  <div key={s.id} className="card-ani" style={{background:"#151e2d",border:"1px solid #1e2e44",borderRadius:16,padding:18,position:"relative",overflow:"hidden"}}>
+                    <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:"linear-gradient(90deg,#f59e0b,#ef4444)"}}/>
+                    <Row s={{justifyContent:"space-between",marginBottom:14}}>
+                      <Row s={{gap:10}}>
+                        <div style={{width:44,height:44,borderRadius:12,background:"linear-gradient(135deg,#78350f,#f59e0b)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>🏪</div>
+                        <div>
+                          <div style={{fontSize:14,fontWeight:700,color:"#e2e8f0"}}>{s.name}</div>
+                          {s.phone&&<div style={{fontSize:12,color:"#64748b"}}>📞 {s.phone}</div>}
+                          {s.address&&<div style={{fontSize:11,color:"#64748b"}}>📍 {s.address}</div>}
+                        </div>
+                      </Row>
+                      <Row s={{gap:5}}>
+                        <OBtn onClick={()=>startEditS(s)} sm tc="#60a5fa" col="#1a3055">✏️</OBtn>
+                        <OBtn onClick={()=>delSup(s.id)} sm tc="#f87171" col="#3f1919">🗑</OBtn>
+                      </Row>
+                    </Row>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+                      <div style={{background:"#0f1520",borderRadius:9,padding:"8px 10px",textAlign:"center"}}>
+                        <div style={{fontSize:10,color:"#64748b"}}>{lang==="ar"?"فواتير":"Invoices"}</div>
+                        <div style={{fontSize:16,fontWeight:700,color:"#a78bfa"}}>{supPurchases.length}</div>
+                      </div>
+                      <div style={{background:"#0f1520",borderRadius:9,padding:"8px 10px",textAlign:"center"}}>
+                        <div style={{fontSize:10,color:"#64748b"}}>{lang==="ar"?"الإجمالي":"Total"}</div>
+                        <div style={{fontSize:14,fontWeight:700,color:"#3b82f6"}}>{supTotal.toFixed(0)}</div>
+                      </div>
+                      <div style={{background:"#0f1520",borderRadius:9,padding:"8px 10px",textAlign:"center"}}>
+                        <div style={{fontSize:10,color:"#64748b"}}>{lang==="ar"?"المتبقي":"Remaining"}</div>
+                        <div style={{fontSize:14,fontWeight:700,color:supDebt>0?"#f87171":"#34d399"}}>{supDebt.toFixed(0)}</div>
+                      </div>
+                    </div>
+                    {s.notes&&<div style={{marginTop:10,fontSize:11,color:"#64748b",background:"#0f1520",borderRadius:8,padding:"6px 10px"}}>💬 {s.notes}</div>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════
+//  PARTS COMPATIBILITY SECTION
+// ════════════════════════════════════════════════════
+
+// Part categories with icons
+const PART_CATS = [
+  {id:"screen",    icon:"📱", ar:"شاشة LCD",       en:"LCD Screen"},
+  {id:"touch",     icon:"👆", ar:"شاشة لمس",       en:"Touch Screen"},
+  {id:"connector", icon:"🔌", ar:"سوكت الشاحن",    en:"Charging Port"},
+  {id:"lcdsocket", icon:"🔗", ar:"سوكت الشاشة",    en:"LCD Connector"},
+  {id:"battery",   icon:"🔋", ar:"بطارية",          en:"Battery"},
+  {id:"camera",    icon:"📷", ar:"كاميرا",          en:"Camera"},
+  {id:"speaker",   icon:"🔊", ar:"سماعة",           en:"Speaker"},
+  {id:"mic",       icon:"🎤", ar:"مايكروفون",       en:"Microphone"},
+  {id:"board",     icon:"🖥", ar:"بورد رئيسي",      en:"Motherboard"},
+  {id:"housing",   icon:"📦", ar:"هيكل/إطار",       en:"Housing/Frame"},
+  {id:"button",    icon:"⚪", ar:"أزرار",            en:"Buttons"},
+  {id:"other",     icon:"🔧", ar:"أخرى",            en:"Other"},
+];
+
+function CompatSection({lang,parts,compatParts,setCompatParts,mobile,showToast,isAdmin}) {
+  const isRtl=lang==="ar";
+  const [selCat,setSelCat]=useState("screen");
+  const [showForm,setShowForm]=useState(false);
+  const [editId,setEditId]=useState(null);
+  const [search,setSearch]=useState("");
+  const [form,setForm]=useState({
+    partId:"",catId:"screen",
+    devices:"", // comma separated device names
+    notes:"",
+    color:"",
+  });
+
+  const cat=PART_CATS.find(c=>c.id===selCat)||PART_CATS[0];
+  const filtered=compatParts.filter(cp=>{
+    if(cp.catId!==selCat)return false;
+    if(search&&!cp.devices.toLowerCase().includes(search.toLowerCase())&&!cp.partName?.toLowerCase().includes(search.toLowerCase()))return false;
+    return true;
+  });
+
+  const save=()=>{
+    if(!form.devices.trim())return;
+    const part=parts.find(p=>p.id===Number(form.partId));
+    const dt=nowDT();
+    const deviceList=form.devices.split(",").map(d=>d.trim()).filter(Boolean);
+    if(editId){
+      setCompatParts(p=>p.map(x=>x.id===editId?{...x,...form,deviceList,partName:part?( lang==="ar"?part.name:part.nameEn):"",updatedAt:dt.iso}:x));
+      showToast(lang==="ar"?"تم التحديث":"Updated");
+    } else {
+      setCompatParts(p=>[...p,{id:genId(),...form,deviceList,partName:part?(lang==="ar"?part.name:part.nameEn):"",createdAt:dt.iso}]);
+      showToast(lang==="ar"?"تمت الإضافة":"Added");
+    }
+    setForm({partId:"",catId:selCat,devices:"",notes:"",color:""});
+    setShowForm(false);setEditId(null);
+  };
+
+  const del=(id)=>{setCompatParts(p=>p.filter(x=>x.id!==id));showToast(lang==="ar"?"تم الحذف":"Deleted");};
+
+  const startEdit=(cp)=>{setForm({partId:cp.partId||"",catId:cp.catId,devices:cp.deviceList?.join(", ")||cp.devices,notes:cp.notes||"",color:cp.color||""});setEditId(cp.id);setShowForm(true);};
+
+  // Group by device — show all devices using same part
+  const allDevices=[...new Set(compatParts.filter(cp=>cp.catId===selCat).flatMap(cp=>cp.deviceList||[]))].sort();
+
+  return (
+    <div dir={isRtl?"rtl":"ltr"}>
+      <PH title={`🔍 ${lang==="ar"?"توافق قطع الغيار":"Parts Compatibility"}`} action={
+        isAdmin&&<Btn onClick={()=>{setShowForm(!showForm);setEditId(null);setForm({partId:"",catId:selCat,devices:"",notes:"",color:""});}}>
+          + {lang==="ar"?"إضافة توافق":"Add Compatibility"}
+        </Btn>
+      }/>
+
+      {/* Category tabs */}
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>
+        {PART_CATS.map(c=>{
+          const count=compatParts.filter(cp=>cp.catId===c.id).length;
+          return (
+            <button key={c.id} onClick={()=>{setSelCat(c.id);setShowForm(false);setSearch("");}}
+              style={{padding:"7px 14px",borderRadius:24,border:"none",cursor:"pointer",fontSize:12,fontWeight:selCat===c.id?700:400,
+                background:selCat===c.id?"linear-gradient(135deg,#2563eb,#1d4ed8)":"#151e2d",
+                color:selCat===c.id?"#fff":"#64748b",transition:"all .15s",display:"flex",alignItems:"center",gap:5}}>
+              {c.icon} {lang==="ar"?c.ar:c.en}
+              {count>0&&<span style={{background:selCat===c.id?"#ffffff33":"#2563eb33",color:selCat===c.id?"#fff":"#60a5fa",borderRadius:10,padding:"1px 6px",fontSize:10}}>{count}</span>}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Add/Edit Form */}
+      {showForm&&(
+        <Card s={{marginBottom:16}}>
+          <h3 style={{fontSize:14,fontWeight:700,color:"#e2e8f0",marginBottom:14}}>
+            {cat.icon} {editId?(lang==="ar"?"تعديل":"Edit"):(lang==="ar"?"إضافة":"Add")} — {lang==="ar"?cat.ar:cat.en}
+          </h3>
+          <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}>
+            <FF label={lang==="ar"?"القطعة من المخزون (اختياري)":"Part from Inventory (optional)"}>
+              <select value={form.partId} onChange={e=>setForm(p=>({...p,partId:e.target.value}))}
+                style={{...{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#cbd5e1",fontSize:13,outline:"none"}}}>
+                <option value="">{lang==="ar"?"-- اختر قطعة --":"-- Select Part --"}</option>
+                {parts.map(p=><option key={p.id} value={p.id}>{lang==="ar"?p.name:p.nameEn}</option>)}
+              </select>
+            </FF>
+            <FF label={lang==="ar"?"لون القطعة (اختياري)":"Part Color (optional)"}>
+              <input value={form.color} onChange={e=>setForm(p=>({...p,color:e.target.value}))}
+                placeholder={lang==="ar"?"مثال: أسود، أبيض، ذهبي":"e.g. Black, White, Gold"}
+                style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#cbd5e1",fontSize:13,outline:"none"}}/>
+            </FF>
+          </div>
+          <FF label={`📱 ${lang==="ar"?"الأجهزة المتوافقة (افصل بين الأجهزة بفاصلة)":"Compatible Devices (separate with comma)"}`}>
+            <textarea value={form.devices} onChange={e=>setForm(p=>({...p,devices:e.target.value}))}
+              rows={3} placeholder={lang==="ar"?"مثال: iPhone 11, iPhone 12, iPhone XR":"e.g. Samsung S21, S21+, S21 Ultra"}
+              style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#cbd5e1",fontSize:13,outline:"none",resize:"vertical"}}/>
+          </FF>
+          <FF label={lang==="ar"?"ملاحظات":"Notes"}>
+            <input value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))}
+              placeholder={lang==="ar"?"ملاحظات إضافية...":"Additional notes..."}
+              style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#cbd5e1",fontSize:13,outline:"none",marginTop:8}}/>
+          </FF>
+          <Row s={{gap:10,marginTop:12}}>
+            <Btn onClick={save} col="#065f46">💾 {lang==="ar"?"حفظ":"Save"}</Btn>
+            <OBtn onClick={()=>{setShowForm(false);setEditId(null);}}>✕ {lang==="ar"?"إلغاء":"Cancel"}</OBtn>
+          </Row>
+        </Card>
+      )}
+
+      {/* Search */}
+      <div style={{marginBottom:14,display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+        <input value={search} onChange={e=>setSearch(e.target.value)}
+          placeholder={lang==="ar"?"بحث باسم الجهاز أو القطعة...":"Search device or part..."}
+          style={{flex:1,maxWidth:280,padding:"9px 14px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#cbd5e1",fontSize:13,outline:"none"}}/>
+        <span style={{fontSize:12,color:"#64748b"}}>{filtered.length} {lang==="ar"?"نتيجة":"results"}</span>
+      </div>
+
+      {/* Compatibility cards */}
+      {filtered.length===0?(
+        <Card s={{textAlign:"center",padding:40}}>
+          <div style={{fontSize:48,marginBottom:12}}>{cat.icon}</div>
+          <div style={{color:"#64748b",fontSize:14}}>
+            {lang==="ar"?`لا يوجد بيانات توافق لـ${cat.ar} بعد`:`No compatibility data for ${cat.en} yet`}
+          </div>
+          {isAdmin&&<Btn onClick={()=>setShowForm(true)} col="#2563eb" s={{marginTop:16}}>
+            + {lang==="ar"?"أضف الآن":"Add Now"}
+          </Btn>}
+        </Card>
+      ):(
+        <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"repeat(auto-fill,minmax(320px,1fr))",gap:14}}>
+          {filtered.map(cp=>(
+            <div key={cp.id} className="card-ani" style={{background:"#151e2d",border:"1px solid #1e2e44",borderRadius:16,padding:18,position:"relative",overflow:"hidden"}}>
+              {/* Top accent */}
+              <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:"linear-gradient(90deg,#2563eb,#7c3aed)"}}/>
+
+              {/* Header */}
+              <Row s={{gap:12,marginBottom:14}}>
+                <div style={{width:46,height:46,borderRadius:13,background:"linear-gradient(135deg,#1e3a5f,#2563eb)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>
+                  {cat.icon}
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"#e2e8f0"}}>
+                    {cp.partName||cat.ar}
+                    {cp.color&&<span style={{marginInlineStart:6,fontSize:11,color:"#a78bfa",background:"#2d1b5522",padding:"2px 8px",borderRadius:10}}>🎨 {cp.color}</span>}
+                  </div>
+                  <div style={{fontSize:11,color:"#64748b",marginTop:2}}>
+                    {cp.deviceList?.length||0} {lang==="ar"?"جهاز متوافق":"compatible devices"}
+                  </div>
+                </div>
+                {isAdmin&&(
+                  <Row s={{gap:5}}>
+                    <OBtn onClick={()=>startEdit(cp)} sm tc="#60a5fa" col="#1a3055">✏️</OBtn>
+                    <OBtn onClick={()=>del(cp.id)} sm tc="#f87171" col="#3f1919">🗑</OBtn>
+                  </Row>
+                )}
+              </Row>
+
+              {/* Devices list */}
+              <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:cp.notes?10:0}}>
+                {(cp.deviceList||[]).map((dev,i)=>(
+                  <span key={i} style={{padding:"4px 10px",borderRadius:20,fontSize:11,fontWeight:500,background:"#1e3a5f",color:"#93c5fd",border:"1px solid #2a4a7f"}}>
+                    📱 {dev}
+                  </span>
+                ))}
+              </div>
+
+              {/* Notes */}
+              {cp.notes&&<div style={{marginTop:8,fontSize:11,color:"#64748b",background:"#0f1520",borderRadius:8,padding:"6px 10px"}}>
+                💬 {cp.notes}
+              </div>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Device index — all devices using this part type */}
+      {allDevices.length>0&&!search&&(
+        <div style={{marginTop:24}}>
+          <h3 style={{fontSize:14,fontWeight:700,color:"#94a3b8",marginBottom:12}}>
+            📋 {lang==="ar"?`جميع الأجهزة في قسم ${cat.ar}`:`All devices in ${cat.en}`} ({allDevices.length})
+          </h3>
+          <div style={{background:"#151e2d",border:"1px solid #1e2e44",borderRadius:14,padding:14,display:"flex",flexWrap:"wrap",gap:8}}>
+            {allDevices.map((dev,i)=>{
+              const partCount=compatParts.filter(cp=>cp.catId===selCat&&cp.deviceList?.includes(dev)).length;
+              return (
+                <button key={i} onClick={()=>setSearch(dev)}
+                  style={{padding:"5px 12px",borderRadius:20,border:"1px solid #2a3a52",background:"#0f1520",color:"#94a3b8",fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
+                  📱 {dev}
+                  {partCount>1&&<span style={{background:"#2563eb33",color:"#60a5fa",borderRadius:8,padding:"1px 6px",fontSize:10}}>{partCount}</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════
+//  TREASURY / ACCOUNTING SECTION
+// ════════════════════════════════════════════════════
+function TreasurySection({lang,treasury,setTreasury,invoices,purchases,mobile,showToast,user}) {
+  const isRtl=lang==="ar";
+  const [showForm,setShowForm]=useState(false);
+  const [showTransfer,setShowTransfer]=useState(false);
+  const [filterDate,setFilterDate]=useState(today());
+  const [form,setForm]=useState({type:"in",method:"cash",amount:"",note:"",date:today()});
+  const [transferAmt,setTransferAmt]=useState("");
+  const f=(k,v)=>setForm(p=>({...p,[k]:v}));
+
+  const METHODS={
+    cash:{ar:"نقدي",en:"Cash",icon:"💵",col:"#10b981"},
+    card:{ar:"بطاقة مصرفية",en:"Bank Card",icon:"💳",col:"#3b82f6"},
+    transfer:{ar:"حوالة مصرفية",en:"Bank Transfer",icon:"🏦",col:"#8b5cf6"},
+  };
+
+  // Add transaction
+  const addTx=()=>{
+    if(!form.amount||Number(form.amount)<=0)return;
+    const dt=nowDT();
+    const tx={id:genId(),...form,amount:Number(form.amount),addedBy:user.name,createdAt:dt.iso};
+    const newDaily=form.type==="in"?treasury.daily+tx.amount:treasury.daily-tx.amount;
+    setTreasury(p=>({...p,daily:Math.max(0,newDaily),transactions:[tx,...p.transactions]}));
+    showToast(lang==="ar"?"تمت الإضافة":"Transaction added");
+    setForm({type:"in",method:"cash",amount:"",note:"",date:today()});setShowForm(false);
+  };
+
+  // Transfer daily → main treasury
+  const doTransfer=()=>{
+    if(!transferAmt||Number(transferAmt)<=0||Number(transferAmt)>treasury.daily)return;
+    const amt=Number(transferAmt);
+    const dt=nowDT();
+    const tx={id:genId(),type:"transfer",method:"cash",amount:amt,note:lang==="ar"?`ترحيل إلى الخزينة الرئيسية ${dt.date}`:`Transfer to Main Treasury ${dt.date}`,date:dt.date,createdAt:dt.iso,addedBy:user.name};
+    setTreasury(p=>({...p,daily:p.daily-amt,main:p.main+amt,transactions:[tx,...p.transactions]}));
+    showToast(lang==="ar"?"تم الترحيل بنجاح":"Transfer successful");
+    setTransferAmt("");setShowTransfer(false);
+  };
+
+  // Filter transactions by date
+  const todayTx=treasury.transactions.filter(t=>t.date===filterDate);
+  const allTx=filterDate?todayTx:treasury.transactions;
+  const todayIn=todayTx.filter(t=>t.type==="in").reduce((s,t)=>s+t.amount,0);
+  const todayOut=todayTx.filter(t=>t.type==="out").reduce((s,t)=>s+t.amount,0);
+  const todayTransfers=todayTx.filter(t=>t.type==="transfer").reduce((s,t)=>s+t.amount,0);
+
+  // Method breakdown today
+  const byMethod=Object.keys(METHODS).map(m=>({
+    ...METHODS[m],id:m,
+    inAmt:todayTx.filter(t=>t.type==="in"&&t.method===m).reduce((s,t)=>s+t.amount,0),
+    outAmt:todayTx.filter(t=>t.type==="out"&&t.method===m).reduce((s,t)=>s+t.amount,0),
+  }));
+
+  const exportCSV=()=>{
+    const rows=[
+      ["#",lang==="ar"?"النوع":"Type",lang==="ar"?"الطريقة":"Method",lang==="ar"?"المبلغ":"Amount",lang==="ar"?"ملاحظة":"Note",lang==="ar"?"التاريخ":"Date",lang==="ar"?"أضيف بواسطة":"Added By"],
+      ...treasury.transactions.map(t=>[t.id,t.type,t.method,t.amount,t.note||"",t.date,t.addedBy||""])
+    ];
+    const csv=rows.map(r=>r.join(",")).join("\n");
+    const b=new Blob(["\uFEFF"+csv],{type:"text/csv"});
+    const url=URL.createObjectURL(b);
+    const a=document.createElement("a");
+    a.href=url;a.download=`treasury-${today()}.csv`;a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div dir={isRtl?"rtl":"ltr"}>
+      {/* Header */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18,flexWrap:"wrap",gap:10}}>
+        <h2 style={{fontSize:19,fontWeight:700,color:"#e2e8f0",margin:0}}>🏦 {lang==="ar"?"الخزينة والمحاسبة":"Treasury & Accounting"}</h2>
+        <Row s={{gap:8,flexWrap:"wrap"}}>
+          <button onClick={exportCSV} style={{padding:"8px 14px",borderRadius:10,border:"none",background:"#065f46",color:"#34d399",fontSize:12,fontWeight:600,cursor:"pointer"}}>📤 {lang==="ar"?"تصدير":"Export"}</button>
+          <Btn onClick={()=>setShowTransfer(true)} col="#7c3aed">🔄 {lang==="ar"?"ترحيل يومي":"Daily Transfer"}</Btn>
+          <Btn onClick={()=>setShowForm(!showForm)} col="#2563eb">+ {lang==="ar"?"إضافة حركة":"Add Transaction"}</Btn>
+        </Row>
+      </div>
+
+      {/* Treasury Cards */}
+      <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"1fr 1fr",gap:14,marginBottom:20}}>
+        {/* Daily Treasury */}
+        <div style={{background:"linear-gradient(135deg,#0d2040,#1a3055)",border:"2px solid #2563eb44",borderRadius:18,padding:22}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+            <div style={{width:46,height:46,borderRadius:13,background:"linear-gradient(135deg,#1d4ed8,#2563eb)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>💵</div>
+            <div>
+              <div style={{fontSize:13,fontWeight:700,color:"#93c5fd"}}>{lang==="ar"?"الخزينة اليومية":"Daily Treasury"}</div>
+              <div style={{fontSize:11,color:"#64748b"}}>{lang==="ar"?"الرصيد الحالي":"Current Balance"}</div>
+            </div>
+          </div>
+          <div style={{fontSize:32,fontWeight:800,color:"#60a5fa",marginBottom:8}}>{treasury.daily.toFixed(2)}</div>
+          <div style={{fontSize:12,color:"#64748b"}}>{lang==="ar"?"دينار ليبي":"LYD"}</div>
+          <div style={{marginTop:14,display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            <div style={{background:"#10b98122",borderRadius:9,padding:"8px 10px"}}>
+              <div style={{fontSize:11,color:"#34d399"}}>⬆️ {lang==="ar"?"وارد اليوم":"Today In"}</div>
+              <div style={{fontSize:14,fontWeight:700,color:"#10b981"}}>{todayIn.toFixed(2)}</div>
+            </div>
+            <div style={{background:"#ef444422",borderRadius:9,padding:"8px 10px"}}>
+              <div style={{fontSize:11,color:"#f87171"}}>⬇️ {lang==="ar"?"صادر اليوم":"Today Out"}</div>
+              <div style={{fontSize:14,fontWeight:700,color:"#f87171"}}>{todayOut.toFixed(2)}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Treasury */}
+        <div style={{background:"linear-gradient(135deg,#1a1035,#2d1b55)",border:"2px solid #7c3aed44",borderRadius:18,padding:22}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+            <div style={{width:46,height:46,borderRadius:13,background:"linear-gradient(135deg,#6d28d9,#7c3aed)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>🏛️</div>
+            <div>
+              <div style={{fontSize:13,fontWeight:700,color:"#c4b5fd"}}>{lang==="ar"?"الخزينة الرئيسية":"Main Treasury"}</div>
+              <div style={{fontSize:11,color:"#64748b"}}>{lang==="ar"?"الرصيد المتراكم":"Accumulated Balance"}</div>
+            </div>
+          </div>
+          <div style={{fontSize:32,fontWeight:800,color:"#a78bfa",marginBottom:8}}>{treasury.main.toFixed(2)}</div>
+          <div style={{fontSize:12,color:"#64748b"}}>{lang==="ar"?"دينار ليبي":"LYD"}</div>
+          <div style={{marginTop:14,background:"#7c3aed22",borderRadius:9,padding:"8px 12px"}}>
+            <div style={{fontSize:11,color:"#a78bfa"}}>🔄 {lang==="ar"?"إجمالي المرحّل اليوم":"Transferred Today"}</div>
+            <div style={{fontSize:14,fontWeight:700,color:"#c4b5fd"}}>{todayTransfers.toFixed(2)}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Method Breakdown */}
+      <h3 style={{fontSize:14,fontWeight:700,color:"#94a3b8",marginBottom:12}}>
+        📊 {lang==="ar"?"تفصيل طرق الدفع":"Payment Methods Breakdown"} — {filterDate||lang==="ar"?"الكل":"All"}
+      </h3>
+      <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"repeat(3,1fr)",gap:10,marginBottom:20}}>
+        {byMethod.map(m=>(
+          <div key={m.id} style={{background:"#151e2d",border:`1px solid ${m.col}33`,borderRadius:14,padding:14}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+              <span style={{fontSize:22}}>{m.icon}</span>
+              <div style={{fontSize:13,fontWeight:700,color:"#e2e8f0"}}>{lang==="ar"?m.ar:m.en}</div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
+              <div style={{background:"#10b98122",borderRadius:8,padding:"7px 10px",textAlign:"center"}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#10b981"}}>{m.inAmt.toFixed(2)}</div>
+                <div style={{fontSize:9,color:"#64748b"}}>{lang==="ar"?"وارد":"In"}</div>
+              </div>
+              <div style={{background:"#ef444422",borderRadius:8,padding:"7px 10px",textAlign:"center"}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#f87171"}}>{m.outAmt.toFixed(2)}</div>
+                <div style={{fontSize:9,color:"#64748b"}}>{lang==="ar"?"صادر":"Out"}</div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Transfer Modal */}
+      {showTransfer&&(
+        <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+          <div style={{background:"#0a0f1e",border:"1px solid #7c3aed44",borderRadius:20,padding:28,width:"100%",maxWidth:400,textAlign:"center"}}>
+            <div style={{fontSize:44,marginBottom:10}}>🔄</div>
+            <h3 style={{color:"#a78bfa",fontSize:16,fontWeight:700,marginBottom:6}}>{lang==="ar"?"ترحيل يومي":"Daily Transfer"}</h3>
+            <p style={{fontSize:12,color:"#64748b",marginBottom:16}}>
+              {lang==="ar"?"ترحيل من الخزينة اليومية إلى الخزينة الرئيسية":"Transfer from Daily to Main Treasury"}
+            </p>
+            <div style={{background:"#151e2d",borderRadius:12,padding:14,marginBottom:16}}>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
+                <span style={{fontSize:12,color:"#64748b"}}>{lang==="ar"?"الخزينة اليومية":"Daily Balance"}</span>
+                <span style={{fontSize:14,fontWeight:700,color:"#60a5fa"}}>{treasury.daily.toFixed(2)}</span>
+              </div>
+              <FF label={lang==="ar"?"المبلغ المراد ترحيله":"Amount to Transfer"}>
+                <input type="number" value={transferAmt} onChange={e=>setTransferAmt(e.target.value)}
+                  placeholder="0.00" max={treasury.daily}
+                  style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #7c3aed55",background:"#131926",color:"#a78bfa",fontSize:16,fontWeight:700,outline:"none",textAlign:"center"}}/>
+              </FF>
+              <button onClick={()=>setTransferAmt(String(treasury.daily))} style={{marginTop:8,background:"none",border:"none",color:"#60a5fa",fontSize:12,cursor:"pointer",textDecoration:"underline"}}>
+                {lang==="ar"?"ترحيل الكل":"Transfer All"}
+              </button>
+            </div>
+            {Number(transferAmt)>treasury.daily&&<div style={{color:"#f87171",fontSize:12,marginBottom:10}}>⚠️ {lang==="ar"?"المبلغ أكبر من الخزينة اليومية":"Amount exceeds daily balance"}</div>}
+            <Row s={{gap:10,justifyContent:"center"}}>
+              <Btn onClick={doTransfer} col="#7c3aed" s={{flex:1}}>🔄 {lang==="ar"?"ترحيل":"Transfer"}</Btn>
+              <OBtn onClick={()=>setShowTransfer(false)} s={{flex:1}}>{lang==="ar"?"إلغاء":"Cancel"}</OBtn>
+            </Row>
+          </div>
+        </div>
+      )}
+
+      {/* Add Transaction Form */}
+      {showForm&&(
+        <Card s={{marginBottom:16}}>
+          <h3 style={{fontSize:14,fontWeight:700,color:"#e2e8f0",marginBottom:14}}>➕ {lang==="ar"?"إضافة حركة مالية":"Add Transaction"}</h3>
+          <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"repeat(2,1fr)",gap:12,marginBottom:12}}>
+            <FF label={lang==="ar"?"نوع الحركة":"Type"}>
+              <div style={{display:"flex",gap:8}}>
+                {[{val:"in",ar:"⬆️ وارد",en:"⬆️ In",col:"#10b981"},{val:"out",ar:"⬇️ صادر",en:"⬇️ Out",col:"#f87171"}].map(t=>(
+                  <button key={t.val} onClick={()=>f("type",t.val)} style={{flex:1,padding:"10px",borderRadius:10,border:`2px solid ${form.type===t.val?t.col:"#2a3a52"}`,background:form.type===t.val?`${t.col}22`:"transparent",color:form.type===t.val?t.col:"#64748b",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+                    {lang==="ar"?t.ar:t.en}
+                  </button>
+                ))}
+              </div>
+            </FF>
+            <FF label={lang==="ar"?"طريقة الدفع":"Payment Method"}>
+              <div style={{display:"flex",gap:6}}>
+                {Object.entries(METHODS).map(([k,m])=>(
+                  <button key={k} onClick={()=>f("method",k)} title={lang==="ar"?m.ar:m.en}
+                    style={{flex:1,padding:"10px 6px",borderRadius:10,border:`2px solid ${form.method===k?m.col:"#2a3a52"}`,background:form.method===k?`${m.col}22`:"transparent",color:form.method===k?m.col:"#64748b",fontSize:18,cursor:"pointer"}}>
+                    {m.icon}
+                  </button>
+                ))}
+              </div>
+              <div style={{fontSize:11,color:METHODS[form.method]?.col,marginTop:4,textAlign:"center"}}>
+                {lang==="ar"?METHODS[form.method]?.ar:METHODS[form.method]?.en}
+              </div>
+            </FF>
+            <FF label={`💰 ${lang==="ar"?"المبلغ":"Amount"}`}>
+              <input type="number" value={form.amount} onChange={e=>f("amount",e.target.value)}
+                placeholder="0.00" style={{width:"100%",padding:"10px 14px",borderRadius:10,border:`1px solid ${form.type==="in"?"#10b98155":"#f8717155"}`,background:"#131926",color:form.type==="in"?"#10b981":"#f87171",fontSize:16,fontWeight:700,outline:"none"}}/>
+            </FF>
+            <FF label={`📅 ${lang==="ar"?"التاريخ":"Date"}`}>
+              <input type="date" value={form.date} onChange={e=>f("date",e.target.value)}
+                style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#e2e8f0",fontSize:13,outline:"none"}}/>
+            </FF>
+          </div>
+          <FF label={`💬 ${lang==="ar"?"ملاحظة":"Note"}`}>
+            <input value={form.note} onChange={e=>f("note",e.target.value)}
+              placeholder={lang==="ar"?"وصف الحركة...":"Transaction description..."}
+              style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #2a3a52",background:"#131926",color:"#cbd5e1",fontSize:13,outline:"none",marginTop:8}}/>
+          </FF>
+          <Row s={{gap:10,marginTop:12}}>
+            <Btn onClick={addTx} col={form.type==="in"?"#065f46":"#7f1d1d"}>
+              💾 {lang==="ar"?"حفظ":"Save"}
+            </Btn>
+            <OBtn onClick={()=>setShowForm(false)}>{lang==="ar"?"إلغاء":"Cancel"}</OBtn>
+          </Row>
+        </Card>
+      )}
+
+      {/* Transactions Log */}
+      <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:14,flexWrap:"wrap"}}>
+        <h3 style={{fontSize:14,fontWeight:700,color:"#94a3b8",margin:0}}>📋 {lang==="ar"?"سجل الحركات":"Transactions Log"}</h3>
+        <input type="date" value={filterDate} onChange={e=>setFilterDate(e.target.value)}
+          style={{padding:"6px 10px",borderRadius:9,border:"1px solid #2a3a52",background:"#131926",color:"#e2e8f0",fontSize:12,outline:"none"}}/>
+        {filterDate&&<OBtn onClick={()=>setFilterDate("")} sm>{lang==="ar"?"الكل":"All"}</OBtn>}
+        <span style={{fontSize:12,color:"#64748b"}}>{allTx.length} {lang==="ar"?"حركة":"tx"}</span>
+      </div>
+
+      {allTx.length===0?(
+        <Card s={{textAlign:"center",padding:40,color:"#64748b"}}>
+          <div style={{fontSize:44,marginBottom:10}}>🏦</div>
+          <div>{lang==="ar"?"لا توجد حركات مالية":"No transactions"}</div>
+        </Card>
+      ):(
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {allTx.map(tx=>{
+            const m=METHODS[tx.method]||METHODS.cash;
+            const isTransfer=tx.type==="transfer";
+            return (
+              <div key={tx.id} className="card-ani" style={{background:"#151e2d",border:`1px solid ${isTransfer?"#7c3aed33":tx.type==="in"?"#10b98133":"#f8717133"}`,borderRadius:13,padding:"12px 16px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+                <div style={{width:40,height:40,borderRadius:11,background:isTransfer?"#7c3aed22":tx.type==="in"?"#10b98122":"#f8717122",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>
+                  {isTransfer?"🔄":m.icon}
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13,fontWeight:600,color:"#e2e8f0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tx.note||lang==="ar"?"—":"—"}</div>
+                  <div style={{fontSize:11,color:"#64748b",marginTop:2}}>
+                    {isTransfer?(lang==="ar"?"ترحيل":"Transfer"):lang==="ar"?m.ar:m.en} • {tx.date} • {lang==="ar"?tx.addedBy:"by "+tx.addedBy}
+                  </div>
+                </div>
+                <div style={{textAlign:"end",flexShrink:0}}>
+                  <div style={{fontSize:15,fontWeight:800,color:isTransfer?"#a78bfa":tx.type==="in"?"#10b981":"#f87171"}}>
+                    {isTransfer?"↗️":(tx.type==="in"?"⬆️":"⬇️")} {tx.amount.toFixed(2)}
+                  </div>
+                  <div style={{fontSize:10,color:"#64748b"}}>{lang==="ar"?"د.ل":"LYD"}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
