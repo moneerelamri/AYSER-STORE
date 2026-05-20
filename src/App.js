@@ -171,6 +171,7 @@ const GS = () => (
     ::-webkit-scrollbar-thumb:hover{background:#3a4a62;}
     input,select,button,textarea{font-family:inherit;}
     .sx{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+    .sidebar-nav{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;min-height:0;flex:1;}
     @media print{
       .np{display:none!important;}
       .sidebar-el{display:none!important;}
@@ -415,29 +416,41 @@ export default function App() {
 
   const go=(id)=>{setTab(id);setSideOpen(false);};
 
-  const SidebarEl = () => (
-    <aside className="sidebar-el" style={{position:"fixed",[isRtl?"right":"left"]:0,top:0,bottom:0,width:215,background:th.sidebar,borderInlineEnd:`1px solid ${th.border}`,display:"flex",flexDirection:"column",zIndex:200,transform:mobile?(sideOpen?"translateX(0)":(isRtl?"translateX(110%)":"translateX(-110%)")):"translateX(0)",transition:"transform .25s ease",boxShadow:mobile&&sideOpen?"0 0 60px #000c":"none"}}>
+// ════════════════════════════════════════════════════
+//  SIDEBAR (external component — stable across renders)
+// ════════════════════════════════════════════════════
+function Sidebar({th,isRtl,logo,t,clock,mobile,sideOpen,setSideOpen,lang,setLang,user,isAdmin,NAV,tab,go,theme,setTheme,setLogoutModal}) {
+  return (
+    <aside className="sidebar-el"
+      onTouchStart={e=>e.stopPropagation()}
+      onTouchMove={e=>e.stopPropagation()}
+      style={{position:"fixed",[isRtl?"right":"left"]:0,top:0,bottom:0,width:215,background:th.sidebar,borderInlineEnd:`1px solid ${th.border}`,display:"flex",flexDirection:"column",zIndex:200,transform:mobile?(sideOpen?"translateX(0)":(isRtl?"translateX(110%)":"translateX(-110%)")):"translateX(0)",transition:"transform .25s ease",boxShadow:mobile&&sideOpen?"0 0 60px #000c":"none",overflow:"hidden"}}>
       {/* Logo & Clock */}
-      <div style={{padding:"12px 10px 10px",borderBottom:"1px solid #1e2d44"}}>
+      <div style={{padding:"12px 10px 10px",borderBottom:`1px solid ${th.border}`,flexShrink:0}}>
         <Row s={{gap:9,marginBottom:9}}>
           <div style={{width:34,height:34,borderRadius:9,background:"linear-gradient(135deg,#2563eb,#1d4ed8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0,overflow:"hidden"}}>
             {logo?<img src={logo} alt="logo" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:"📱"}
           </div>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:14,fontWeight:800,color:"#fff"}}>{t.appTitle}</div>
-            <div style={{fontSize:9,color:"#374151"}}>{t.appSubtitle}</div>
+            <div style={{fontSize:14,fontWeight:800,color:th.text}}>{t.appTitle}</div>
+            <div style={{fontSize:9,color:th.sub}}>{t.appSubtitle}</div>
           </div>
-          {mobile&&<button onClick={()=>setSideOpen(false)} style={{background:"none",border:"none",color:"#6b7280",fontSize:20,cursor:"pointer",flexShrink:0}}>✕</button>}
+          {mobile&&<button onClick={()=>setSideOpen(false)} style={{background:"none",border:"none",color:th.sub,fontSize:20,cursor:"pointer",flexShrink:0}}>✕</button>}
         </Row>
-        <div style={{background:"#070b14",borderRadius:8,padding:"7px 10px",textAlign:"center"}}>
-          <div style={{fontSize:19,fontWeight:700,color:"#3b82f6",fontFamily:"monospace",letterSpacing:3}}>{clock.toTimeString().slice(0,8)}</div>
-          <div style={{fontSize:9,color:"#374151",marginTop:2}}>
+        <div style={{background:th.bg,borderRadius:8,padding:"7px 10px",textAlign:"center"}}>
+          <div style={{fontSize:19,fontWeight:700,color:th.accent,fontFamily:"monospace",letterSpacing:3}}>{clock.toTimeString().slice(0,8)}</div>
+          <div style={{fontSize:9,color:th.sub,marginTop:2}}>
             {clock.toLocaleDateString(isRtl?"ar-LY":"en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"})}
           </div>
         </div>
       </div>
-      {/* Nav */}
-      <nav style={{flex:1,padding:"8px 6px",overflowY:"auto",overflowX:"hidden",scrollbarWidth:"thin",scrollbarColor:"#1e2d44 transparent"}}>
+
+      {/* Nav — scrollable */}
+      <nav style={{flex:1,overflowY:"scroll",overflowX:"hidden",WebkitOverflowScrolling:"touch",padding:"8px 6px",minHeight:0}}
+        onTouchStart={e=>e.stopPropagation()}
+        onTouchMove={e=>{e.stopPropagation();}}
+        onTouchEnd={e=>e.stopPropagation()}
+      >
         {NAV.map(n=>(
           <button key={n.id} onClick={()=>go(n.id)} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"10px 11px",borderRadius:10,border:"none",cursor:"pointer",marginBottom:3,background:tab===n.id?th.navActive:"transparent",color:tab===n.id?th.navActiveTxt:th.sub,fontSize:13,fontWeight:tab===n.id?600:400,textAlign:isRtl?"right":"left",transition:"all .15s",borderInlineStart:tab===n.id?`3px solid ${th.accent}`:"3px solid transparent"}}>
             <span style={{fontSize:16}}>{n.icon}</span>
@@ -446,48 +459,50 @@ export default function App() {
           </button>
         ))}
       </nav>
-      {/* User & Logout */}
-      <div style={{padding:"8px 6px 10px",borderTop:"1px solid #1e2d44"}}>
-        <div style={{background:"#070b14",borderRadius:8,padding:"8px 11px",marginBottom:7}}>
-          <div style={{fontSize:13,fontWeight:600,color:"#e2e8f0"}}>{isRtl?user.name:user.nameEn}</div>
-          <div style={{fontSize:10,color:"#374151",marginTop:2}}>{isAdmin?t.admin:t.technician} · @{user.username}</div>
+
+      {/* Bottom: user + theme + logout */}
+      <div style={{padding:"8px 6px 10px",borderTop:`1px solid ${th.border}`,flexShrink:0}}>
+        <div style={{background:th.bg,borderRadius:8,padding:"8px 11px",marginBottom:7}}>
+          <div style={{fontSize:13,fontWeight:600,color:th.text}}>{isRtl?user.name:user.nameEn}</div>
+          <div style={{fontSize:10,color:th.sub,marginTop:2}}>{isAdmin?t.admin:t.technician} · @{user.username}</div>
         </div>
-        <Row s={{gap:5,marginBottom:6}}>
+        <Row s={{gap:5,marginBottom:8}}>
           {["ar","en"].map(l=>(
-            <button key={l} onClick={()=>setLang(l)} style={{flex:1,padding:"5px",borderRadius:7,border:"1px solid",borderColor:lang===l?"#2563eb":"#1e2d44",background:lang===l?"#1e3a5f":"transparent",color:lang===l?"#60a5fa":"#374151",fontSize:11,cursor:"pointer"}}>
+            <button key={l} onClick={()=>setLang(l)} style={{flex:1,padding:"5px",borderRadius:7,border:"1px solid",borderColor:lang===l?th.accent:th.border,background:lang===l?th.navActive:"transparent",color:lang===l?th.navActiveTxt:th.sub,fontSize:11,cursor:"pointer"}}>
               {l==="ar"?"🇱🇾 ع":"🇺🇸 En"}
             </button>
           ))}
         </Row>
         {/* Theme Picker */}
-        <div style={{padding:"10px 12px",borderTop:`1px solid ${th.border}`}}>
-          <div style={{fontSize:10,color:th.sub,marginBottom:7,fontWeight:500}}>{lang==="ar"?"🎨 المظهر":"🎨 Theme"}</div>
+        <div style={{marginBottom:8}}>
+          <div style={{fontSize:10,color:th.sub,marginBottom:5,fontWeight:500}}>{lang==="ar"?"🎨 المظهر":"🎨 Theme"}</div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:4}}>
-            {Object.entries(THEMES).map(([key,t])=>(
-              <button key={key} onClick={()=>setTheme(key)} title={lang==="ar"?t.name:t.nameEn}
-                style={{width:"100%",aspectRatio:"1",borderRadius:8,border:theme===key?"2px solid #fff":"2px solid transparent",background:t.bg,cursor:"pointer",transition:"border .15s",fontSize:10,display:"flex",alignItems:"center",justifyContent:"center"}}>
+            {Object.entries(THEMES).map(([key,tm])=>(
+              <button key={key} onClick={()=>setTheme(key)} title={lang==="ar"?tm.name:tm.nameEn}
+                style={{width:"100%",aspectRatio:"1",borderRadius:8,border:theme===key?"2px solid #fff":"2px solid transparent",background:tm.bg,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
                 {theme===key&&<span style={{color:"#fff",fontSize:8}}>✓</span>}
               </button>
             ))}
           </div>
         </div>
-
-        <button onClick={()=>setLogoutModal(true)} style={{margin:"0 10px 10px",padding:"8px",borderRadius:9,border:`1px solid ${th.border}`,background:"transparent",color:"#f87171",fontSize:12,cursor:"pointer"}}>
+        <button onClick={()=>setLogoutModal(true)} style={{width:"100%",padding:"8px",borderRadius:9,border:`1px solid ${th.border}`,background:"transparent",color:"#f87171",fontSize:12,cursor:"pointer"}}>
           🚪 {t.logout}
         </button>
       </div>
     </aside>
   );
+}
 
   // ── Logout Modal ─────────────────────────────────
   const th = TC(theme);
   const ml = isRtl?"marginRight":"marginLeft";
+  const sidebarProps = {th,isRtl,logo,t,clock,mobile,sideOpen,setSideOpen,lang,setLang,user,isAdmin,NAV,tab,go,theme,setTheme,setLogoutModal};
   return (
     <div dir={isRtl?"rtl":"ltr"} style={{fontFamily:isRtl?"'Tajawal',sans-serif":"'Outfit',sans-serif",minHeight:"100vh",background:th.bg,color:th.text}}>
       <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet"/>
       <GS/>
-      {mobile&&sideOpen&&<div onClick={()=>setSideOpen(false)} style={{position:"fixed",inset:0,background:"#00000088",zIndex:199}}/>}
-      <SidebarEl/>
+      {mobile&&sideOpen&&<div onClick={()=>setSideOpen(false)} onTouchStart={e=>{if(e.target===e.currentTarget)setSideOpen(false);}} style={{position:"fixed",inset:0,background:"#00000088",zIndex:199}}/>}
+      <Sidebar {...sidebarProps}/>
       {logoutModal&&<LogoutModal
         lang={lang} isRtl={isRtl} user={user}
         users={users} parts={parts} tools={tools} invoices={invoices} devices={devices}
