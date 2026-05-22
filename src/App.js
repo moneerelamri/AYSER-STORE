@@ -271,7 +271,6 @@ export default function App() {
   const [devices,setDevices] = useState(()=>LS.get("devices",INIT_DEVICES));
   const [log,setLog] = useState(()=>LS.get("log",[]));
   const [toast,setToast] = useState(null);
-  const [clock,setClock] = useState(new Date());
   const [lastBk,setLastBk] = useState(null);
   const [mobile,setMobile] = useState(window.innerWidth<768);
   const [storeInfo,setStoreInfo] = useState(()=>LS.get("storeInfo",{phone:"",phone2:"",address:"",addressEn:"",maps:"",siteUrl:""}));
@@ -362,7 +361,6 @@ export default function App() {
   useEffect(()=>LS.set("lang",lang),[lang]);
   useEffect(()=>LS.set("theme",theme),[theme]);
 
-  useEffect(()=>{const i=setInterval(()=>setClock(new Date()),1000);return()=>clearInterval(i);},[]);
   useEffect(()=>{
     const h=()=>setMobile(window.innerWidth<768);
     window.addEventListener("resize",h); return()=>window.removeEventListener("resize",h);
@@ -416,10 +414,28 @@ export default function App() {
 
   const go=(id)=>{setTab(id);setSideOpen(false);};
 
+// ── Clock component — isolated so it doesn't re-render Sidebar ──
+function SidebarClock({isRtl,col}) {
+  const [clock,setClock] = useState(new Date());
+  useEffect(()=>{const i=setInterval(()=>setClock(new Date()),1000);return()=>clearInterval(i);},[]);
+  return (
+    <div style={{textAlign:"center"}}>
+      <div style={{fontSize:19,fontWeight:700,color:col,fontFamily:"monospace",letterSpacing:3}}>{clock.toTimeString().slice(0,8)}</div>
+      <div style={{fontSize:9,color:"#374151",marginTop:2}}>{clock.toLocaleDateString(isRtl?"ar-LY":"en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"})}</div>
+    </div>
+  );
+}
+
+function TopbarClock({col}) {
+  const [clock,setClock] = useState(new Date());
+  useEffect(()=>{const i=setInterval(()=>setClock(new Date()),1000);return()=>clearInterval(i);},[]);
+  return <span style={{fontSize:12,fontFamily:"monospace",color:col}}>{clock.toTimeString().slice(0,8)}</span>;
+}
+
 // ════════════════════════════════════════════════════
 //  SIDEBAR (external component — stable across renders)
 // ════════════════════════════════════════════════════
-function Sidebar({th,isRtl,logo,t,clock,mobile,sideOpen,setSideOpen,lang,setLang,user,isAdmin,NAV,tab,go,theme,setTheme,setLogoutModal}) {
+function Sidebar({th,isRtl,logo,t,mobile,sideOpen,setSideOpen,lang,setLang,user,isAdmin,NAV,tab,go,theme,setTheme,setLogoutModal}) {
   return (
     <aside className="sidebar-el"
       onTouchStart={e=>e.stopPropagation()}
@@ -438,10 +454,7 @@ function Sidebar({th,isRtl,logo,t,clock,mobile,sideOpen,setSideOpen,lang,setLang
           {mobile&&<button onClick={()=>setSideOpen(false)} style={{background:"none",border:"none",color:th.sub,fontSize:20,cursor:"pointer",flexShrink:0}}>✕</button>}
         </Row>
         <div style={{background:th.bg,borderRadius:8,padding:"7px 10px",textAlign:"center"}}>
-          <div style={{fontSize:19,fontWeight:700,color:th.accent,fontFamily:"monospace",letterSpacing:3}}>{clock.toTimeString().slice(0,8)}</div>
-          <div style={{fontSize:9,color:th.sub,marginTop:2}}>
-            {clock.toLocaleDateString(isRtl?"ar-LY":"en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"})}
-          </div>
+          <SidebarClock isRtl={isRtl} col={th.accent}/>
         </div>
       </div>
 
@@ -496,7 +509,7 @@ function Sidebar({th,isRtl,logo,t,clock,mobile,sideOpen,setSideOpen,lang,setLang
   // ── Logout Modal ─────────────────────────────────
   const th = TC(theme);
   const ml = isRtl?"marginRight":"marginLeft";
-  const sidebarProps = {th,isRtl,logo,t,clock,mobile,sideOpen,setSideOpen,lang,setLang,user,isAdmin,NAV,tab,go,theme,setTheme,setLogoutModal};
+  const sidebarProps = {th,isRtl,logo,t,mobile,sideOpen,setSideOpen,lang,setLang,user,isAdmin,NAV,tab,go,theme,setTheme,setLogoutModal};
   return (
     <div dir={isRtl?"rtl":"ltr"} style={{fontFamily:isRtl?"'Tajawal',sans-serif":"'Outfit',sans-serif",minHeight:"100vh",background:th.bg,color:th.text}}>
       <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet"/>
@@ -515,7 +528,7 @@ function Sidebar({th,isRtl,logo,t,clock,mobile,sideOpen,setSideOpen,lang,setLang
         <div className="topbar-el" style={{position:"fixed",top:0,left:0,right:0,height:50,background:th.sidebar,borderBottom:`1px solid ${th.border}`,display:"flex",alignItems:"center",padding:"0 14px",zIndex:150,gap:12}}>
           <button onClick={()=>setSideOpen(true)} style={{background:"none",border:"none",color:th.sub,fontSize:22,cursor:"pointer"}}>☰</button>
           <span style={{fontSize:14,fontWeight:800,color:th.text}}>{t.appTitle}</span>
-          <div style={{marginInlineStart:"auto"}}><span style={{fontSize:12,fontFamily:"monospace",color:th.accent}}>{clock.toTimeString().slice(0,8)}</span></div>
+          <div style={{marginInlineStart:"auto"}}><TopbarClock col={th.accent}/></div>
         </div>
       )}
       {toast&&<div style={{position:"fixed",top:mobile?56:16,left:"50%",transform:"translateX(-50%)",background:toast.type==="success"?"#065f46":"#7f1d1d",color:"#fff",padding:"10px 24px",borderRadius:10,zIndex:9999,fontSize:13,fontWeight:500,boxShadow:"0 8px 32px #0006",whiteSpace:"nowrap"}}>{toast.msg}</div>}
